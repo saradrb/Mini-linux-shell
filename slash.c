@@ -64,18 +64,18 @@ static int is_valid(char **arguments, int length, bool is_cd, char *option, char
                 strncpy(option, arguments[i], strlen(arguments[i]) + 1);
                 break;
             case 1:
-                if (strlen(path) != 0) return 1;  // there are more than one argument that isn't an option
+                if (strlen(path) != 0) return 1;  // there is more than one argument that isn't an option
                 else strncpy(path, arguments[i], strlen(arguments[i]) + 1);
                 break;
             default:
-                return -1;  // there are an unknow option
+                return -1;  // there is an unknown option
         }
     }
     return 0;
 }
 
 int my_pwd() {
-    printf("%s\n", current_rep);
+    return 1;
 }
 
 int my_cd(char **arguments, int length) {
@@ -185,10 +185,10 @@ void read_cmd(){
                 my_exit(list_arg, length);
             }else{
                 if(strcmp(cmd,"cd")==0){
-                    my_cd(list_arg, length);
+                    previous_return_value = my_cd(list_arg, length);
                 }else{
                     if(strcmp(cmd,"pwd")==0){
-                        my_pwd();
+                        previous_return_value = my_pwd();
                     }else{
                         printf("%s: command not found\n",cmd);
                     }
