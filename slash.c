@@ -11,8 +11,8 @@
 #define MAX_ARGS_STRLEN 4096
 #define PATH_MAX 4096
 
-char previous_rep[4096] = {'\0'};
-char current_rep[4096] = {'\0'};
+char previous_rep[PATH_MAX] = {'\0'};
+char current_rep[PATH_MAX] = {'\0'};
 
 int previous_return_value = 0;
 
@@ -33,6 +33,63 @@ int my_exit(char **arguments, int length) {
     }
 }
 
+char *directory(char *path, int pos_path, int len){
+    char *word = malloc(len - pos_path);
+    if (word == NULL){
+        perror("malloc");
+    }
+    int pos_word = 0;
+    while (pos_path < len && path[pos_path] != '/'){
+        word[pos_word] = path[pos_path];
+        pos_path += 1;
+        pos_word += 1;
+    }
+    return word;
+}
+
+int suppr_directory(char *path, int pos){
+    do{
+        path[pos] = '\0';
+        pos -= 1;
+    } while (path[pos] != '/');
+    return pos;
+}
+
+char *get_final_path(char *path){
+    char *res = malloc(sizeof(path));
+    if(res == NULL){
+        perror("malloc");
+    }
+
+    if (path[0] != '/')
+    {
+        return NULL;
+    }
+    res[0] = '/';
+    int len = strlen(path);
+    int pos_last_directory = 0;
+    for (int i = 1; i < strlen(path); i++){
+        char *word = directory(path, i, len);
+
+        if (strcmp(word, "..") == 0){
+            if (pos_last_directory != 0){
+                pos_last_directory = suppr_directory(res, pos_last_directory + 1);
+                if(pos_last_directory > 0) pos_last_directory -= 1;
+                i += 2;
+            }
+        } else if (strcmp(word, ".") == 0){
+            i += 1;
+        } else if (strlen(word) != 0){
+            strcat(res, word);
+            i += strlen(word) - 1;
+            pos_last_directory = strlen(res) - 1;
+        } else {
+            res[pos_last_directory + 1] = path[i];
+        }
+    }
+    return res;
+}
+
 /* Test if the given argument is valid for the commands 'pwd' and 'cd'.
  * Return 0 if 'argument' is a valid option (-P or -L), -1 if it is any
  * other options and 0 if it isn't an option.
@@ -50,6 +107,7 @@ static int is_valid_argument(char *argument, bool is_cd) {
     }
     return 1;
 }
+
 
 /* Test if the given arguments are valid for the commands 'pwd' and 'cd'
  * and fill 'option' and 'path' with the correct argument (if more than one
@@ -74,7 +132,31 @@ static int is_valid(char **arguments, int length, bool is_cd, char *option, char
     return 0;
 }
 
-int my_pwd() {
+int my_pwd(char **arguments, int length) {
+    char option[3], path[PATH_MAX] = {'\0'};
+
+    int valid = is_valid(arguments, length, false, option, path);
+    if (valid == 1) {
+        write(STDOUT_FILENO, "pwd: Too many arguments\n", 24);
+        return 1;
+    }
+    if (valid == -1) {
+        write(STDOUT_FILENO, "pwd: Unknown option\n", 20);
+        return 1;
+    }
+
+    char buffer[PATH_MAX] = {'\0'};
+    if (strcmp(option, "-P") == 0) {
+        getcwd(buffer, sizeof(buffer));
+        strcat(buffer, "\n");
+        write(STDOUT_FILENO, buffer, strlen(buffer));
+        return 0;
+    } else if (strcmp(option, "-L") == 0 || strlen(option) == 0) {
+        strcat(buffer, current_rep);
+        strcat(buffer, "\n");
+        write(STDOUT_FILENO, buffer, strlen(buffer));
+        return 0;
+    }
     return 1;
 }
 
@@ -140,6 +222,34 @@ int my_cd(char **arguments, int length) {
     return 0;
 }
 
+int prompt(int val) {
+    char nbr[12];
+    sprintf(nbr, "%d", val);
+
+    char res[128] = {'\0'};
+    char *color_out = "\002\033[00m]";
+    if (val == 0) {
+        strcat(res, "[\001\033[32m");
+    } else {
+        strcat(res, "[\001\033[91m");
+    }
+    strcat(res, nbr);
+    strcat(res, color_out);
+    
+    int len = strlen(current_rep);
+    if (len > 25) {
+        strcat(res, "...");
+        strcat(res, &current_rep[len - 22]);
+        strcat(res, "$ ");
+        write(STDOUT_FILENO, res, strlen(res));
+    } else {
+        strcat(res, current_rep);
+        strcat(res, "$ ");
+        write(STDOUT_FILENO, res, strlen(res));
+    }
+    return 0;
+}
+
 // function that takes the input line and parse it, it returns an array of args , number of args and the command   
 char ** split_line(char* line,char** cmd,int *length,char* delimiters){
 
@@ -188,7 +298,7 @@ void read_cmd(){
                     previous_return_value = my_cd(list_arg, length);
                 }else{
                     if(strcmp(cmd,"pwd")==0){
-                        previous_return_value = my_pwd();
+                        previous_return_value = my_pwd(list_arg, length);
                     }else{
                         printf("%s: command not found\n",cmd);
                     }
@@ -205,7 +315,29 @@ void read_cmd(){
 
 int main(int argc, char const *argv[]) {
     //rl_outstream = stderr;
-    getcwd(current_rep, PATH_MAX);
-    read_cmd();
-    return (0);
+    // // getcwd(current_rep, PATH_MAX);
+    // // read_cmd();
+    // // return (0);
+    char *a = "/a/c/b";
+    printf("%s = %s\n", a, get_final_path(a));
+    char *b = "/a/./c/b";
+    printf("%s = %s\n", b, get_final_path(b));
+    char *c = "/..";
+    printf("%s = %s\n", c, get_final_path(c));
+    char *d = "/../../../";
+    printf("%s = %s\n", d, get_final_path(d));
+    char *e = "/../../..";
+    printf("%s = %s\n", e, get_final_path(e));
+    char *f = "/..";
+    printf("%s = %s\n", f, get_final_path(f));
+    char *g = "/../a/b/./../c";
+    printf("%s = %s\n", g, get_final_path(g));
+    char *h = "/.././././a";
+    printf("%s = %s\n", h, get_final_path(h));
+    char *i = "/../a/b/c/../..";
+    printf("%s = %s\n", i, get_final_path(i));
+    char *j = "/../a/b/c/d/.";
+    printf("%s = %s\n", j, get_final_path(j));
+    char *k = "///";
+    printf("%s = %s\n", k, get_final_path(k));
 }
