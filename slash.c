@@ -67,6 +67,7 @@ char *get_final_path(char *path) {
   res[0] = '/';
   int len = strlen(path);
   int pos_last_directory = 0;
+  bool slash = false;
   for (int i = 1; i < strlen(path); i++) {
     char *word = directory(path, i, len);
 
@@ -76,14 +77,20 @@ char *get_final_path(char *path) {
         if (pos_last_directory > 0) pos_last_directory -= 1;
         i += 2;
       }
+      slash = false;
     } else if (strcmp(word, ".") == 0) {
       i += 1;
+      slash = false;
     } else if (strlen(word) != 0) {
       strcat(res, word);
       i += strlen(word) - 1;
       pos_last_directory = strlen(res) - 1;
+      slash = false;
+    } else if (slash == true) {
+      return NULL;
     } else {
       res[pos_last_directory + 1] = path[i];
+      slash = true;
     }
   }
   return res;
