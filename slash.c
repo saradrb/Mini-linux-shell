@@ -10,6 +10,7 @@
 #define MAX_ARGS_NUMBER 4096
 #define MAX_ARGS_STRLEN 4096
 #define PATH_MAX 4096
+#define EXIT_MAX_VALUE 255
 
 char previous_rep[PATH_MAX] = {'\0'};
 char current_rep[PATH_MAX] = {'\0'};
@@ -25,25 +26,33 @@ int my_exit(char **arguments, int length) {
   if (length == 0) {
     exit(previous_return_value);
   } else {
-    if (isdigit(arguments[0]) == 0) {
-      write(STDOUT_FILENO, "exit: Invalid argument\n", 24);
-      return 1;
+    for (int i = 0; i < strlen(arguments[0]); i++) {
+      if (isdigit(arguments[0][i]) == 0) {
+        write(STDOUT_FILENO, "exit: Invalid argument\n", 24);
+        return 1;
+      }
     }
     exit(atoi(arguments[0]));
   }
 }
 
 char *directory(char *path, int pos_path, int len) {
-  char *word = malloc(len - pos_path);
+  char *word = malloc(len - pos_path + 1);
   if (word == NULL) {
-    perror("malloc");
+    free(word);
+    return NULL;
   }
+  for (int i = 0; i < len - pos_path + 1; i++) {
+    word[i] = '\0';
+  }
+
   int pos_word = 0;
-  while (pos_path < len && path[pos_path] != '/') {
+  while (path[pos_path] != '\0' && path[pos_path] != '/') {
     word[pos_word] = path[pos_path];
     pos_path += 1;
     pos_word += 1;
   }
+  word[pos_word + 1] = '\0';
   return word;
 }
 
@@ -56,14 +65,20 @@ int suppr_directory(char *path, int pos) {
 }
 
 char *get_final_path(char *path) {
-  char *res = malloc(sizeof(path));
+  char *res = malloc(PATH_MAX);
   if (res == NULL) {
-    perror("malloc");
+    free(res);
+    return NULL;
   }
 
   if (path[0] != '/') {
+    free(res);
     return NULL;
   }
+  for (int i = 0; i < PATH_MAX; i++) {
+    res[i] = '\0';
+  }
+
   res[0] = '/';
   int len = strlen(path);
   int pos_last_directory = 0;
@@ -87,12 +102,16 @@ char *get_final_path(char *path) {
       pos_last_directory = strlen(res) - 1;
       slash = false;
     } else if (slash == true) {
+      free(res);
+      free(word);
       return NULL;
     } else {
       res[pos_last_directory + 1] = path[i];
       slash = true;
     }
+    free(word);
   }
+  res[pos_last_directory + 1] = '\0';
   return res;
 }
 
@@ -130,7 +149,7 @@ static int is_valid(char **arguments, int length, bool is_cd, char *option,
         strncpy(option, arguments[i], strlen(arguments[i]) + 1);
         break;
       case 1:
-        if (strlen(path) != 0)
+        if (!is_cd || strlen(path) != 0)
           return 1;  // there is more than one argument that isn't an option
         else
           strncpy(path, arguments[i], strlen(arguments[i]) + 1);
@@ -218,14 +237,15 @@ int my_cd(char **arguments, int length) {
   if (strcmp(option, "-P") == 0) {
     getcwd(current_rep, PATH_MAX);
   } else {
-    // TODO : transformer path en sa version final (sans les .. et .)
-    // path = get_final_path(path);
     if (path[0] == '/') {
       strncpy(current_rep, path, strlen(path) + 1);
     } else {
       int length = strlen(current_rep);
-      strncpy(current_rep + length, "/", 1);
+      strncpy(current_rep + length, "/", 2);
       strncpy(current_rep + length + 1, path, strlen(path) + 1);
+      char *final_path = get_final_path(current_rep);
+      strncpy(current_rep, final_path, strlen(final_path) + 1);
+      free(final_path);
     }
   }
 
@@ -250,12 +270,10 @@ int prompt(int val) {
   if (len > 25) {
     strcat(res, "...");
     strcat(res, &current_rep[len - 22]);
-    strcat(res, "$ ");
-    write(STDOUT_FILENO, res, strlen(res));
+    write(STDERR_FILENO, res, strlen(res));
   } else {
     strcat(res, current_rep);
-    strcat(res, "$ ");
-    write(STDOUT_FILENO, res, strlen(res));
+    write(STDERR_FILENO, res, strlen(res));
   }
   return 0;
 }
@@ -285,12 +303,13 @@ char **split_line(char *line, char **cmd, int *length, char *delimiters) {
 
 // function that read the command line input and format it
 void read_cmd() {
-  char *prompt = ">";
+  char *prompt_char = "$ ";
   int length = 0;
   char *cmd = " ";
   while (1) {
+    prompt(previous_return_value);
     // read the command line input
-    char *line = readline(prompt);
+    char *line = readline(prompt_char);
     if (line && *line) {  // if the line isnt empty
 
       add_history(line);
@@ -300,7 +319,7 @@ void read_cmd() {
 
       // exec command
       if (strcmp(cmd, "exit") == 0) {
-        my_exit(list_arg, length);
+        previous_return_value = my_exit(list_arg, length);
       } else {
         if (strcmp(cmd, "cd") == 0) {
           previous_return_value = my_cd(list_arg, length);
@@ -309,6 +328,7 @@ void read_cmd() {
             previous_return_value = my_pwd(list_arg, length);
           } else {
             printf("%s: command not found\n", cmd);
+            previous_return_value = 1;
           }
         }
       }
