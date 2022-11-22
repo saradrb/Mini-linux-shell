@@ -37,7 +37,7 @@ int my_exit(char **arguments, int length) {
 }
 
 char *directory(char *path, int pos_path, int len) {
-  char *word = malloc(len - pos_path + 1);
+  char *word = malloc(len - pos_path + 2);
   if (word == NULL) {
     free(word);
     return NULL;
@@ -162,7 +162,8 @@ static int is_valid(char **arguments, int length, bool is_cd, char *option,
 }
 
 int my_pwd(char **arguments, int length) {
-  char option[3], path[PATH_MAX] = {'\0'};
+  char option[3] = {'\0'};
+  char path[PATH_MAX] = {'\0'};
 
   int valid = is_valid(arguments, length, false, option, path);
   if (valid == 1) {
@@ -173,14 +174,13 @@ int my_pwd(char **arguments, int length) {
     write(STDOUT_FILENO, "pwd: Unknown option\n", 20);
     return 1;
   }
-
   char buffer[PATH_MAX] = {'\0'};
   if (strcmp(option, "-P") == 0) {
     getcwd(buffer, sizeof(buffer));
     strcat(buffer, "\n");
     write(STDOUT_FILENO, buffer, strlen(buffer));
     return 0;
-  } else if (strcmp(option, "-L") == 0 || strlen(option) == 0) {
+  } else {
     strcat(buffer, current_rep);
     strcat(buffer, "\n");
     write(STDOUT_FILENO, buffer, strlen(buffer));
@@ -190,7 +190,8 @@ int my_pwd(char **arguments, int length) {
 }
 
 int my_cd(char **arguments, int length) {
-  char option[3], path[PATH_MAX] = {'\0'};
+  char option[3] = {'\0'};
+  char path[PATH_MAX] = {'\0'};
 
   int valid = is_valid(arguments, length, true, option, path);
   if (valid == 1) {
@@ -229,25 +230,56 @@ int my_cd(char **arguments, int length) {
     return 0;
   }
 
-  if (chdir(path) == -1) {
-    write(STDOUT_FILENO, "cd: Invalid path\n", 18);
-    return 1;
-  }
-  strncpy(previous_rep, current_rep, PATH_MAX);
-  if (strcmp(option, "-P") == 0) {
-    getcwd(current_rep, PATH_MAX);
-  } else {
-    if (path[0] == '/') {
-      strncpy(current_rep, path, strlen(path) + 1);
-    } else {
+  char tmp[PATH_MAX] = {'\0'};
+  if (strlen(option) == 0 || strcmp(option, "-L") == 0) {
+    if (path[0] != '/') {
       int length = strlen(current_rep);
-      strncpy(current_rep + length, "/", 2);
-      strncpy(current_rep + length + 1, path, strlen(path) + 1);
-      char *final_path = get_final_path(current_rep);
-      strncpy(current_rep, final_path, strlen(final_path) + 1);
+      strncpy(tmp, current_rep, PATH_MAX);
+      strncpy(tmp + length, "/", 2);
+      strncpy(tmp + length + 1, path, strlen(path) + 1);
+      char *final_path = get_final_path(tmp);
+      strncpy(tmp, final_path, strlen(final_path) + 1);
       free(final_path);
     }
+  } else {
+    strncpy(tmp, path, strlen(path) + 1);
   }
+
+  if (chdir(tmp) == -1) {
+    if (strlen(option) == 0 || strcmp(option, "-L") == 0) {
+      if (chdir(path) == -1) {
+        write(STDOUT_FILENO, "cd: Invalid path\n", 18);
+        return 1;
+      }
+      strncpy(previous_rep, current_rep, PATH_MAX);
+      getcwd(current_rep, PATH_MAX);
+      return 0;
+    } else {
+      write(STDOUT_FILENO, "cd: Invalid path\n", 18);
+      return 1;
+    }
+  }
+  strncpy(previous_rep, current_rep, PATH_MAX);
+  if (strcmp(option, "-P") == 0)
+    getcwd(current_rep, PATH_MAX);
+  else
+    strncpy(current_rep, tmp, PATH_MAX);
+  /*
+  if (strcmp(option, "-P") == 0) {
+    getcwd(current_rep, PATH_MAX);
+  } else {*/
+
+  /*
+  if (path[0] == '/') {
+    strncpy(current_rep, path, strlen(path) + 1);
+  } else {
+    int length = strlen(current_rep);
+    strncpy(current_rep + length, "/", 2);
+    strncpy(current_rep + length + 1, path, strlen(path) + 1);
+    char *final_path = get_final_path(current_rep);
+    strncpy(current_rep, final_path, strlen(final_path) + 1);
+    free(final_path);
+  }*/
 
   return 0;
 }
@@ -257,11 +289,11 @@ int prompt(int val) {
   sprintf(nbr, "%d", val);
 
   char res[128] = {'\0'};
-  char *color_out = "\002\033[00m]";
+  char *color_out = "]\002\033[00m";
   if (val == 0) {
-    strcat(res, "[\001\033[32m");
+    strcat(res, "\001\033[32m[");
   } else {
-    strcat(res, "[\001\033[91m");
+    strcat(res, "\001\033[91m[");
   }
   strcat(res, nbr);
   strcat(res, color_out);
@@ -336,12 +368,14 @@ void read_cmd() {
       // free the memory allocated
       free(list_arg);
       free(line);
+    } else {
+      previous_return_value = my_exit(NULL, 0);
     }
   }
 }
 
 int main(int argc, char const *argv[]) {
-  // rl_outstream = stderr;
+  rl_outstream = stderr;
   getcwd(current_rep, PATH_MAX);
   read_cmd();
   return (0);
