@@ -1,3 +1,5 @@
+#include <readline/history.h>
+#include <readline/readline.h>
 #include "internal_commands.h"
 
 extern char previous_rep[PATH_MAX];
