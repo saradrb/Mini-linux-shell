@@ -10,7 +10,6 @@
 #define MAX_ARGS_NUMBER 4096
 #define MAX_ARGS_STRLEN 4096
 #define PATH_MAX 4096
-#define EXIT_MAX_VALUE 255
 
 char previous_rep[PATH_MAX] = {'\0'};
 char current_rep[PATH_MAX] = {'\0'};
@@ -23,9 +22,11 @@ int my_exit(char **arguments, int length) {
     return 1;
   }
 
+  // if no argument has been given, exit with the previous return value
   if (length == 0) {
     exit(previous_return_value);
   } else {
+    // verify if the given argument is a number
     for (int i = 0; i < strlen(arguments[0]); i++) {
       if (isdigit(arguments[0][i]) == 0) {
         write(STDOUT_FILENO, "exit: Invalid argument\n", 24);
@@ -138,44 +139,36 @@ char *get_final_path(char *path) {
   return res;
 }
 
-/* Test if the given argument is valid for the commands 'pwd' and 'cd'.
+/* Get the given argument type for the commands 'pwd' and 'cd'.
  * Return 0 if 'argument' is a valid option (-P or -L), -1 if it is any
- * other options and 0 if it isn't an option.
- * If the command given is 'cd', return 0 if the argument is '-'. */
-static int is_valid_argument(char *argument, bool is_cd) {
-  if (argument[0] == '-') {
-    if (strcmp(argument, "-P") == 0) {
-      return 0;
-    } else if (strcmp(argument, "-L") == 0) {
-      return 0;
-    } else if (strcmp(argument, "-") == 0) {
-      if (is_cd)
-        return 1;
-      else
-        return -1;
-    }
+ * other options and 1 if the argument is '-', or isn't an option. */
+static int get_argument_type(char *argument, bool is_cd) {
+  if (argument[0] == '-') {  // the argument is an option
+    if (strcmp(argument, "-P") == 0 || strcmp(argument, "-L") == 0) return 0;
+    if (is_cd && strcmp(argument, "-") == 0) return 1;
+    return -1;
   }
-  return 1;
+  return 1;  // the argument isn't an option
 }
 
 /* Test if the given arguments are valid for the commands 'pwd' and 'cd'
- * and fill 'option' and 'path' with the correct argument (if more than one
- * valid option has been found, fill 'option' with the last one).
+ * and fill 'option' (and 'path' if 'is_cd' is true) with the correct
+ * argument (if more than one valid option has been found, fill 'option' with
+ * the last one).
  * Return 0 if all given arguments are valid, -1 if an unknown option has been
- * found and 1 if more than one argument that isn't an option has been found. */
+ * found and 1 if more than the valid number or arguments has been found. */
 static int is_valid(char **arguments, int length, bool is_cd, char *option,
                     char *path) {
   for (int i = 0; i < length; i++) {
-    int is_valid = is_valid_argument(arguments[i], is_cd);
-    switch (is_valid) {
-      case 0:
+    int type = get_argument_type(arguments[i], is_cd);
+    switch (type) {
+      case 0:  // the argument is a valid option
         strncpy(option, arguments[i], strlen(arguments[i]) + 1);
         break;
-      case 1:
+      case 1:  // the argument isn't an option
         if (!is_cd || strlen(path) != 0)
-          return 1;  // there is more than one argument that isn't an option
-        else
-          strncpy(path, arguments[i], strlen(arguments[i]) + 1);
+          return 1;  // there is more than the valid number of argument
+        strncpy(path, arguments[i], strlen(arguments[i]) + 1);
         break;
       default:
         return -1;  // there is an unknown option
@@ -200,6 +193,7 @@ int my_pwd(char **arguments, int length) {
     write(STDOUT_FILENO, "pwd: Unknown option\n", 20);
     return 1;
   }
+
   char buffer[PATH_MAX] = {'\0'};
   // if there is a -P option : return the physical interpretation with getcwd
   if (strcmp(option, "-P") == 0) {
@@ -215,13 +209,17 @@ int my_pwd(char **arguments, int length) {
     write(STDOUT_FILENO, buffer, strlen(buffer));
     return 0;
   }
+
   return 1;
 }
 
 int my_cd(char **arguments, int length) {
   char option[3] = {'\0'};
   char path[PATH_MAX] = {'\0'};
+  char new_current[PATH_MAX] = {'\0'};
+  bool physical_interpretation = false;
 
+  // verify the validity of the arguments
   int valid = is_valid(arguments, length, true, option, path);
   if (valid == 1) {
     write(STDOUT_FILENO, "cd: Too many arguments\n", 24);
@@ -232,83 +230,73 @@ int my_cd(char **arguments, int length) {
     return 1;
   }
 
+  // stock the HOME directory in 'new_current'
   if (strlen(path) == 0) {
     char *home = getenv("HOME");
-    if (chdir(home) == -1) {
-      write(STDOUT_FILENO, "cd: Invalid path\n", 18);
-      return 1;
-    }
-    strncpy(previous_rep, current_rep, PATH_MAX);
-    strncpy(current_rep, getenv("HOME"), strlen(home) + 1);
-    return 0;
+    strncpy(new_current, home, strlen(home) + 1);
   }
 
-  if (strcmp(path, "-") == 0) {
-    if (previous_rep == NULL) {
+  // stock the previous directory in 'new_current'
+  else if (strcmp(path, "-") == 0) {
+    if (previous_rep == NULL) {  // there is no previous directory
       write(STDOUT_FILENO, "cd: No previous directory\n", 27);
       return 1;
     }
-    if (chdir(previous_rep) == -1) {
-      write(STDOUT_FILENO, "cd: Invalid path\n", 18);
-      return 1;
-    }
-    char tmp[PATH_MAX];
-    strncpy(tmp, previous_rep, PATH_MAX);
-    strncpy(previous_rep, current_rep, PATH_MAX);
-    strncpy(current_rep, tmp, PATH_MAX);
-    return 0;
+    strncpy(new_current, previous_rep, PATH_MAX);
   }
 
-  char tmp[PATH_MAX] = {'\0'};
-  if (strlen(option) == 0 || strcmp(option, "-L") == 0) {
-    if (path[0] != '/') {
-      int length = strlen(current_rep);
-      strncpy(tmp, current_rep, PATH_MAX);
-      strncpy(tmp + length, "/", 2);
-      strncpy(tmp + length + 1, path, strlen(path) + 1);
-      char *final_path = get_final_path(tmp);
-      strncpy(tmp, final_path, strlen(final_path) + 1);
-      free(final_path);
+  // stock the directory specified in 'path' (interpreted logically by removing
+  // '.' and '..') in 'new_current'
+  else if (strlen(option) == 0 || strcmp(option, "-L") == 0) {
+    if (path[0] == '/') {  // path is an absolute reference, just copy it
+      strncpy(new_current, path, strlen(path) + 1);
+    } else {  // path isn't an absolute reference, transform it and copy it
+      int current_rep_length = strlen(current_rep);
+      strncpy(new_current, current_rep, PATH_MAX);
+      // add a '/' after copying 'current_rep', unless 'current_rep' is just '/'
+      if (strcmp(current_rep, "/") != 0) {
+        strncpy(new_current + current_rep_length, "/", 2);
+        current_rep_length++;
+      }
+      strncpy(new_current + current_rep_length, path, strlen(path) + 1);
     }
-  } else {
-    strncpy(tmp, path, strlen(path) + 1);
+    // remove all '.' and '..' that can be found and transform the path
+    // correspondingly
+    char *final_path = get_final_path(new_current);
+    strncpy(new_current, final_path, strlen(final_path) + 1);
+    free(final_path);
   }
 
-  if (chdir(tmp) == -1) {
-    if (strlen(option) == 0 || strcmp(option, "-L") == 0) {
-      if (chdir(path) == -1) {
+  // stock the directory specified in 'path' (interpreted physically by chdir
+  // itself) in 'new_current'
+  else {
+    physical_interpretation = true;
+    strncpy(new_current, path, strlen(path) + 1);
+  }
+
+  // change the current directory to the one specified in 'new_current'
+  if (chdir(new_current) == -1) {
+    // if the path is invalid and it was a logical interpretation, interprete it
+    // physically
+    if (!physical_interpretation) {
+      physical_interpretation = true;
+      strncpy(new_current, path, strlen(path) + 1);
+      if (chdir(new_current) == -1) {
         write(STDOUT_FILENO, "cd: Invalid path\n", 18);
         return 1;
       }
-      strncpy(previous_rep, current_rep, PATH_MAX);
-      getcwd(current_rep, PATH_MAX);
-      return 0;
     } else {
       write(STDOUT_FILENO, "cd: Invalid path\n", 18);
       return 1;
     }
   }
+
+  // fill the global variables 'previous_rep' and 'current_rep'
   strncpy(previous_rep, current_rep, PATH_MAX);
-  if (strcmp(option, "-P") == 0)
+  if (physical_interpretation)
     getcwd(current_rep, PATH_MAX);
   else
-    strncpy(current_rep, tmp, PATH_MAX);
-  /*
-  if (strcmp(option, "-P") == 0) {
-    getcwd(current_rep, PATH_MAX);
-  } else {*/
-
-  /*
-  if (path[0] == '/') {
-    strncpy(current_rep, path, strlen(path) + 1);
-  } else {
-    int length = strlen(current_rep);
-    strncpy(current_rep + length, "/", 2);
-    strncpy(current_rep + length + 1, path, strlen(path) + 1);
-    char *final_path = get_final_path(current_rep);
-    strncpy(current_rep, final_path, strlen(final_path) + 1);
-    free(final_path);
-  }*/
+    strncpy(current_rep, new_current, PATH_MAX);
 
   return 0;
 }
