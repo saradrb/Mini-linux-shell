@@ -52,8 +52,8 @@ static char *directory(char *path, int pos_path, int len) {
   return word;
 }
 
-/* Suppress a directory at the end of path (between path[pos] and a char '/') */
-static int suppr_directory(char *path, int pos) {
+/* Delete a directory at the end of path (between path[pos] and a char '/') */
+static int delete_directory(char *path, int pos) {
   do {
     path[pos] = '\0';
     pos -= 1;
@@ -93,7 +93,7 @@ static char *get_final_path(char *path) {
     // directory is root
     if (strcmp(word, "..") == 0) {
       if (pos_last_directory != 0) {
-        pos_last_directory = suppr_directory(res, pos_last_directory + 1);
+        pos_last_directory = delete_directory(res, pos_last_directory + 1);
         if (pos_last_directory > 0) pos_last_directory -= 1;
         i += 2;
       }
@@ -165,7 +165,7 @@ static int is_valid(char **arguments, int length, bool is_cd, char *option,
   return 0;
 }
 
-/* Return the absolute path interpreted logically if there is no option or if
+/* Write the absolute path interpreted logically if there is no option or if
  * the option is -L, or interpreted physicaly if the option is -P */
 int my_pwd(char **arguments, int length) {
   char option[3] = {'\0'};

@@ -15,7 +15,7 @@
 */
 int my_exit(char **arguments, int length);
 
-/* Return the absolute path interpreted logically if there is no option or if
+/* Write the absolute path interpreted logically if there is no option or if
  * the option is -L, or interpreted physicaly if the option is -P
  */
 int my_pwd(char **arguments, int length);
