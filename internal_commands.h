@@ -17,3 +17,5 @@
 int my_pwd(char **arguments, int length);
 
 int my_cd(char **arguments, int length);
+
+int my_exit(char **arguments, int length);

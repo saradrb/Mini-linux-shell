@@ -4,27 +4,6 @@ extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
 extern int previous_return_value;
 
-static int my_exit(char **arguments, int length) {
-  if (length > 1) {
-    write(STDOUT_FILENO, "exit: Too many arguments\n", 26);
-    return 1;
-  }
-
-  // if no argument has been given, exit with the previous return value
-  if (length == 0) {
-    exit(previous_return_value);
-  } else {
-    // verify if the given argument is a number
-    for (int i = 0; i < strlen(arguments[0]); i++) {
-      if (isdigit(arguments[0][i]) == 0) {
-        write(STDOUT_FILENO, "exit: Invalid argument\n", 24);
-        return 1;
-      }
-    }
-    exit(atoi(arguments[0]));
-  }
-}
-
 /* Print prompt with color, containing the return value of
  * the last executed command and the path where we are
  */
@@ -68,7 +47,8 @@ static void my_prompt() {
 
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
-static char **split_line(char *line, char **cmd, int *length, char *delimiters) {
+static char **split_line(char *line, char **cmd, int *length,
+                         char *delimiters) {
   char **list_arg = NULL;           // allocate memory for the args array
   *cmd = strtok(line, delimiters);  // the first arg is the command
   int nb_spaces = 0;

@@ -4,6 +4,27 @@ char previous_rep[PATH_MAX] = {'\0'};
 char current_rep[PATH_MAX] = {'\0'};
 int previous_return_value = 0;
 
+int my_exit(char **arguments, int length) {
+  if (length > 1) {
+    write(STDOUT_FILENO, "exit: Too many arguments\n", 26);
+    return 1;
+  }
+
+  // if no argument has been given, exit with the previous return value
+  if (length == 0) {
+    exit(previous_return_value);
+  } else {
+    // verify if the given argument is a number
+    for (int i = 0; i < strlen(arguments[0]); i++) {
+      if (isdigit(arguments[0][i]) == 0) {
+        write(STDOUT_FILENO, "exit: Invalid argument\n", 24);
+        return 1;
+      }
+    }
+    exit(atoi(arguments[0]));
+  }
+}
+
 /* Search a directory in path between path[pos_path]
  * and the first next '/' or the end of path
  */
