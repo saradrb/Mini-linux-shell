@@ -78,8 +78,16 @@ static void read_cmd() {
     my_prompt();
     // read the command line input
     char *line = readline(prompt_char);
-    if (line && *line) {  // if the line isnt empty
 
+    // if the file has ended, exit the program
+    if (line == NULL) {
+      write(STDOUT_FILENO, "\n", 1);
+      char *value[1] = {"0"};
+      my_exit(value, 1);
+    }
+
+    // if the line isnt empty
+    if (line && *line) {
       add_history(line);
 
       // split the line
@@ -104,8 +112,6 @@ static void read_cmd() {
       // free the memory allocated
       free(list_arg);
       free(line);
-    } else {
-      previous_return_value = my_exit(NULL, 0);
     }
   }
 }
