@@ -36,26 +36,33 @@ int my_exit(char **arguments, int length) {
   }
 }
 
+/* Search a directory in path between path[pos_path]
+ * and the first next '/' or the end of path
+ */
 char *directory(char *path, int pos_path, int len) {
-  char *word = malloc(len - pos_path + 2);
+  // allocation and management of the memory
+  char *word = malloc(sizeof(char) * (len - pos_path + 2));
   if (word == NULL) {
     free(word);
     return NULL;
   }
-  for (int i = 0; i < len - pos_path + 1; i++) {
-    word[i] = '\0';
-  }
 
+  // search the directory
   int pos_word = 0;
   while (path[pos_path] != '\0' && path[pos_path] != '/') {
     word[pos_word] = path[pos_path];
     pos_path += 1;
     pos_word += 1;
   }
-  word[pos_word + 1] = '\0';
+
+  // add the null byte
+  word[pos_word] = '\0';
   return word;
 }
 
+/* Suppress a directory at the end of path
+ * (between path[pos] and a char '/')
+ */
 int suppr_directory(char *path, int pos) {
   do {
     path[pos] = '\0';
@@ -64,18 +71,24 @@ int suppr_directory(char *path, int pos) {
   return pos;
 }
 
+/* Take an absolute path and return a simplification
+ * of this path without the . and .. directory
+ */
 char *get_final_path(char *path) {
-  char *res = malloc(PATH_MAX);
+  // verify if the first character is '/' (root)
+  if (path[0] != '/') {
+    return NULL;
+  }
+
+  // allocation and management of the memory
+  char *res = malloc(sizeof(char) * (strlen(path) + 2));
   if (res == NULL) {
     free(res);
     return NULL;
   }
 
-  if (path[0] != '/') {
-    free(res);
-    return NULL;
-  }
-  for (int i = 0; i < PATH_MAX; i++) {
+  // fill res with '\0' (to use strlen(word))
+  for (int i = 0; i < strlen(path) + 2; i++) {
     res[i] = '\0';
   }
 
@@ -84,8 +97,11 @@ char *get_final_path(char *path) {
   int pos_last_directory = 0;
   bool slash = false;
   for (int i = 1; i < strlen(path); i++) {
+    // skim through path, directory by directory
     char *word = directory(path, i, len);
 
+    // when word is .. suppress the last directory added in res except if the
+    // directory is root
     if (strcmp(word, "..") == 0) {
       if (pos_last_directory != 0) {
         pos_last_directory = suppr_directory(res, pos_last_directory + 1);
@@ -93,24 +109,31 @@ char *get_final_path(char *path) {
         i += 2;
       }
       slash = false;
+      // when world is . ignore word and the next '/'
     } else if (strcmp(word, ".") == 0) {
       i += 1;
       slash = false;
+      // when word is a simple directory, add this directory to res
     } else if (strlen(word) != 0) {
       strcat(res, word);
       i += strlen(word) - 1;
       pos_last_directory = strlen(res) - 1;
       slash = false;
+      // when path contain two '/' following each other, release the memory
+      // and return NULL
     } else if (slash == true) {
       free(res);
       free(word);
       return NULL;
+      // when word is equal to '/', add word in res
     } else {
       res[pos_last_directory + 1] = path[i];
       slash = true;
     }
+    // release memory
     free(word);
   }
+  // add the null byte
   res[pos_last_directory + 1] = '\0';
   return res;
 }
@@ -161,25 +184,31 @@ static int is_valid(char **arguments, int length, bool is_cd, char *option,
   return 0;
 }
 
+/* Return the absolute path interpreted logically if there is no option or if
+ * the option is -L, or interpreted physicaly if the option is -P
+ */
 int my_pwd(char **arguments, int length) {
   char option[3] = {'\0'};
-  char path[PATH_MAX] = {'\0'};
-
-  int valid = is_valid(arguments, length, false, option, path);
+  // check if the arguments are valid
+  int valid = is_valid(arguments, length, false, option, NULL);
   if (valid == 1) {
     write(STDOUT_FILENO, "pwd: Too many arguments\n", 24);
     return 1;
   }
+  // check if the options are valid
   if (valid == -1) {
     write(STDOUT_FILENO, "pwd: Unknown option\n", 20);
     return 1;
   }
   char buffer[PATH_MAX] = {'\0'};
+  // if there is a -P option : return the physical interpretation with getcwd
   if (strcmp(option, "-P") == 0) {
     getcwd(buffer, sizeof(buffer));
     strcat(buffer, "\n");
     write(STDOUT_FILENO, buffer, strlen(buffer));
     return 0;
+    // if the option isn't -P, return the logical interpretation
+    // with the global variable current repertory
   } else {
     strcat(buffer, current_rep);
     strcat(buffer, "\n");
@@ -284,30 +313,45 @@ int my_cd(char **arguments, int length) {
   return 0;
 }
 
-int prompt(int val) {
+/* Print prompt with color, containing the return value of
+ * the last executed command and the path where we are
+ */
+void my_prompt() {
+  // convert the previous return value into a char[]
   char nbr[12];
-  sprintf(nbr, "%d", val);
+  sprintf(nbr, "%d", previous_return_value);
 
-  char res[128] = {'\0'};
-  char *color_out = "]\002\033[00m";
-  if (val == 0) {
-    strcat(res, "\001\033[32m[");
+  char res[50] = {'\0'};
+  // complete res with green if the last return value is 0, and with red
+  // otherwise
+  if (previous_return_value == 0) {
+    char *start_prompt_green = "\001\033[32m\002[";
+    strcat(res, start_prompt_green);
   } else {
-    strcat(res, "\001\033[91m[");
+    char *start_prompt_red = "\001\033[91m\002[";
+    strcat(res, start_prompt_red);
   }
   strcat(res, nbr);
-  strcat(res, color_out);
 
+  // change the color to cyan
+  char *start_pwd_cyan = "]\001\033[36m\002";
+  strcat(res, start_pwd_cyan);
+
+  char *end_prompt = "\001\033[00m\002";
   int len = strlen(current_rep);
+  // complete res with the absolute path, or with a simplification of the
+  // absolute path if length of path is more then 25 characters
   if (len > 25) {
     strcat(res, "...");
     strcat(res, &current_rep[len - 22]);
-    write(STDERR_FILENO, res, strlen(res));
   } else {
     strcat(res, current_rep);
-    write(STDERR_FILENO, res, strlen(res));
   }
-  return 0;
+  // change the color to default and write res into STDERR
+  strcat(res, end_prompt);
+  if (write(STDERR_FILENO, res, strlen(res)) != strlen(res)) {
+    return;
+  }
 }
 
 // function that takes the input line and parse it, it returns an array of args
@@ -339,7 +383,7 @@ void read_cmd() {
   int length = 0;
   char *cmd = " ";
   while (1) {
-    prompt(previous_return_value);
+    my_prompt();
     // read the command line input
     char *line = readline(prompt_char);
     if (line && *line) {  // if the line isnt empty
