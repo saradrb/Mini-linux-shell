@@ -84,8 +84,7 @@ static void read_cmd() {
     // if the file has ended, exit the program
     if (line == NULL) {
       write(STDOUT_FILENO, "\n", 1);
-      char *value[1] = {"0"};
-      my_exit(value, 1);
+      my_exit(NULL, 0);
     }
 
     // if the line isnt empty
