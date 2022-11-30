@@ -11,7 +11,7 @@ extern int previous_return_value;
  */
 static void my_prompt() {
   // convert the previous return value into a char[]
-  char nbr[12];
+  char nbr[6] = {'\0'};
   sprintf(nbr, "%d", previous_return_value);
 
   char res[50] = {'\0'};
@@ -34,9 +34,9 @@ static void my_prompt() {
   int len = strlen(current_rep);
   // complete res with the absolute path, or with a simplification of the
   // absolute path if length of path is more then 25 characters
-  if (len > 25) {
+  if (len > 26 - strlen(nbr)) {
     strcat(res, "...");
-    strcat(res, &current_rep[len - 22]);
+    strcat(res, &current_rep[len - 22 + strlen(nbr) - 1]);
   } else {
     strcat(res, current_rep);
   }
