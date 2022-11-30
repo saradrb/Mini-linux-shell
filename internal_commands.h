@@ -7,6 +7,7 @@
 #define MAX_ARGS_NUMBER 4096
 #define MAX_ARGS_STRLEN 4096
 #define PATH_MAX 4096
+#define MAX_EXIT_VALUE 999
 
 /* Exit the program with a certain value. If no value has been given, close
  * the program with the value the last function called has returned, otherwise

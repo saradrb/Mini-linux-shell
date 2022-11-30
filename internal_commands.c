@@ -25,6 +25,11 @@ int my_exit(char **arguments, int length) {
         return 1;
       }
     }
+    int value = atoi(arguments[0]);
+    if (value > MAX_EXIT_VALUE) {
+        write(STDOUT_FILENO, "exit: Exit value too big\n", 26);
+        return 1;
+    }
     exit(atoi(arguments[0]));
   }
 }
