@@ -47,6 +47,66 @@ static void my_prompt() {
   }
 }
 
+
+// function that execute external commands 
+
+int external_cmd(char* cmd,char ** list_arg,int length){
+  previous_return_value=0;
+  int val=0;
+  switch(fork()){
+    case 0:
+      for (int i = 0; i < length; i++)
+      {
+        write(STDOUT_FILENO,*list_arg[i],sizeof(**list_arg));
+      }
+    
+      if (execvp(cmd,list_arg)==-1){
+      perror("execvp");val=1;
+
+    default:
+      wait(NULL);
+      write(STDOUT_FILENO,"sara",4);
+      return val;
+
+
+
+  }
+
+  }
+}
+
+
+
+int prefix(char *string,char* str,char* new_str){
+    
+  if(strncmp(string,str,strlen(string))==0){
+
+    if (strlen(str)==strlen(string)){
+        (new_str)=NULL;
+    }
+    else{
+        strcpy(new_str,str+strlen(string));
+       }
+    return 1;
+  }else{return 0;}
+}
+
+int suffix(char *string,char* str,char* new_str){
+   char* ending= str+strlen(str)-strlen(string);
+   //printf("ending: %s\n",ending);
+   if(strcmp(string,ending)==0){
+    
+    if (strlen(str)==strlen(string)){
+        new_str=NULL;
+    }
+    else{
+        strncpy(new_str,str,strlen(str)-strlen(ending));
+        }    
+    return 1;
+  }else{return 0;}
+}
+
+
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
 static char **split_line(char *line, char **cmd, int *length,
