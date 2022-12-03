@@ -104,7 +104,10 @@ int prefix(char *string,char* str,char* new_str){
         (new_str)=NULL;
     }
     else{
-        strcpy(new_str,str+strlen(string));
+        if (new_str!=NULL){
+          strcpy(new_str,str+strlen(string));
+          strcat(new_str,"\0");
+        }
        }
     return 1;
   }else{return 0;}
@@ -119,7 +122,10 @@ int suffix(char *string,char* str,char* new_str){
         new_str=NULL;
     }
     else{
-        strncpy(new_str,str,strlen(str)-strlen(ending));
+        if (new_str!=NULL){  
+          strncpy(new_str,str,strlen(str)-strlen(ending));
+          strcat(new_str,"\0");
+        } 
         }    
     return 1;
   }else{return 0;}
