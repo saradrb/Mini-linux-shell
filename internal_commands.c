@@ -300,3 +300,71 @@ int my_cd(char **arguments, int length) {
 
   return 0;
 }
+
+// JOKERS 
+//parse a path with a delimiter
+static char **parse_path(char *path, int *length,char *delimiters) {
+  char **list_arg = NULL;          
+  char *arg = strtok(path, delimiters);  
+  int nb_spaces = 0;
+  while (arg && (nb_spaces < MAX_ARGS_NUMBER)) {
+    nb_spaces++;
+    list_arg = realloc(list_arg, sizeof(char *) * nb_spaces);
+    if (list_arg == NULL) exit(-1);  // memory allocation failed
+    list_arg[nb_spaces - 1] = arg;
+    arg = strtok(NULL, delimiters);
+  }
+  list_arg = realloc(list_arg, sizeof(char *) * (nb_spaces + 1));
+  list_arg[nb_spaces] = NULL;
+
+  *length = nb_spaces;
+  return list_arg;
+}
+
+
+char * array_tostring(char** array_ofchar,char* delimiter){
+  return " ";
+}
+
+char ** char_array_concat(char** array1,char** array2){
+  return array1;
+}
+
+int prefix(char *string,char* str,char* new_str){
+    
+  if(strncmp(string,str,strlen(string))==0){
+
+    if (strlen(str)==strlen(string)){
+        (new_str)=NULL;
+    }
+    else{
+        if (new_str!=NULL){
+          strcpy(new_str,str+strlen(string));
+          strcat(new_str,"\0");
+        }
+       }
+    return 1;
+  }else{return 0;}
+}
+
+int suffix(char *string,char* str,char* new_str){
+   char* ending= str+strlen(str)-strlen(string);
+   //printf("ending: %s\n",ending);
+   if(strcmp(string,ending)==0){
+    
+    if (strlen(str)==strlen(string)){
+        new_str=NULL;
+    }
+    else{
+        if (new_str!=NULL){  
+          strncpy(new_str,str,strlen(str)-strlen(ending));
+          strcat(new_str,"\0");
+        } 
+        }    
+    return 1;
+  }else{return 0;}
+}
+
+
+
+
