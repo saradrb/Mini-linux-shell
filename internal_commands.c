@@ -322,49 +322,160 @@ static char **parse_path(char *path, int *length,char *delimiters) {
 }
 
 
-char * array_tostring(char** array_ofchar,char* delimiter){
-  return " ";
+ char * array_tostring(char** array_ofchar,int length,char* delemiter){
+  char* my_string=malloc(sizeof(char*));
+  for (int i = 0; i < length; i++){
+    
+    strcat(my_string,array_ofchar[i]);
+    strcat(my_string,delemiter);
+  }
+
+  return my_string;
+
 }
 
 char ** char_array_concat(char** array1,char** array2){
   return array1;
 }
 
-int prefix(char *string,char* str,char* new_str){
-    
-  if(strncmp(string,str,strlen(string))==0){
+int prefix(char *string, char *str, char *new_str)
+{
 
-    if (strlen(str)==strlen(string)){
-        (new_str)=NULL;
+  if (strncmp(string, str, strlen(string)) == 0)
+  {
+    
+    if (strlen(str) == strlen(string))
+    {
+      
+      (new_str) = NULL;
     }
-    else{
-        if (new_str!=NULL){
-          strcpy(new_str,str+strlen(string));
-          strcat(new_str,"\0");
+    else
+    {
+      if (new_str != NULL)
+      {
+        
+        strcpy(new_str, str + strlen(string));
+        strcat(new_str, "\0");
+      }
+    }
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+int suffix(char *string, char *str, char *new_str)
+{
+  char *ending = str + strlen(str) - strlen(string);
+  // printf("ending: %s\n",ending);
+  if (strcmp(string, ending) == 0)
+  {
+
+    if (strlen(str) == strlen(string))
+    {
+      new_str = NULL;
+    }
+    else
+    {
+      if (new_str != NULL)
+      {
+        strncpy(new_str, str, strlen(str) - strlen(ending));
+        strcat(new_str, "\0");
+      }
+    }
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+//return an array with all the path options after expansion of the wildcards
+
+char** expand_star_wildcard(char* initial_path,char* expanded_path){
+char** options = malloc(sizeof(char*)*PATH_MAX);
+int i=0; //index of options
+int j=0;
+int length=0;
+//char* rest_path=malloc(sizeof(char)*PATH_MAX);
+char non_expended_path={'\0'};
+char rest_path[PATH_MAX]={'\0'};
+char path_option[PATH_MAX]={'\0'};;
+char** parsed_path = parse_path(initial_path,&length,"/");
+char parent_path[PATH_MAX]={'\0'};
+struct dirent* entry=NULL;
+DIR * current_dir=NULL;
+struct stat st;
+
+
+if(strcmp(expanded_path,"")!=0){ 
+  current_dir=opendir(expanded_path);
+  if(current_dir=-1){perror("opendir failed");exit(1);}
+  strcat(expanded_path,"/");
+  }
+else current_dir=opendir(current_rep);
+
+if(length==1){ 
+    while(entry=readdir(current_dir)){
+      stat(entry->d_name,&st);
+      if ( (!prefix(".",entry->d_name,NULL)) && (!S_ISDIR(st.st_mode)) ){
+          if(prefix("*",parsed_path[0],rest_path) && suffix(rest_path,entry->d_name,NULL)){
+            //there is a * prefix in filename
+
+              if(strcmp(expanded_path,"")!=0){
+                strcat(expanded_path,entry->d_name);
+                strcpy(options[i],expanded_path);
+              }
+              else {
+                strcpy(options[i],entry->d_name);
+                }
+              i++;
+          }//endif *
+          else{//there is no * in filename
+                if(strcmp(parsed_path[0],entry->d_name)){
+
+                  strcat(expanded_path,entry->d_name);
+                  strcpy(options[i],expanded_path);
+                  i++;
+                }
+             }
+      }//endif
+    }//endw
+}
+else{ 
+  if(prefix("*",parsed_path[j],rest_path)){
+      
+      if(strcmp(expanded_path,"")!=0){
+          current_dir=opendir(expanded_path);
+      }else {
+          current_dir=opendir(current_rep);
+      }
+     
+      while(entry=readdir(current_dir)){
+        stat(entry->d_name,&st);
+        if(S_ISDIR(st.st_mode)){
+          current_dir=opendir(entry->d_name);
+          strcat(expanded_path,entry->d_name);
+          non_expended_path =array_tostring(parsed_path+1,"/");
+          char** new_options =expand_star_wildcard(non_expended_path,expanded_path);
+          char_array_concat(options,new_options);
+          free(new_options);
         }
-       }
-    return 1;
-  }else{return 0;}
-}
-
-int suffix(char *string,char* str,char* new_str){
-   char* ending= str+strlen(str)-strlen(string);
-   //printf("ending: %s\n",ending);
-   if(strcmp(string,ending)==0){
-    
-    if (strlen(str)==strlen(string)){
-        new_str=NULL;
+        
     }
-    else{
-        if (new_str!=NULL){  
-          strncpy(new_str,str,strlen(str)-strlen(ending));
-          strcat(new_str,"\0");
-        } 
-        }    
-    return 1;
-  }else{return 0;}
+
+  }//endif
+  else{ //there is no * in the dirname
+      strcat(expanded_path,parsed_path[0]);
+      char* non_expended_path =array_tostring(parsed_path+1,"/");
+      char** new_options =expand_star_wildcard(non_expended_path,expanded_path);
+      char_array_concat(options,new_options);
+      free(new_options);
+  }
 }
-
-
-
+return options;
+}
 
