@@ -1,3 +1,5 @@
+#ifndef _INTERNALCOMMANDS_H_
+#define _INTERNALCOMMANDS_H_
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -32,3 +34,8 @@ int my_pwd(char **arguments, int length);
  * Return 0 if the directory has been successfully changed and 1 otherwise.
 */
 int my_cd(char **arguments, int length);
+
+//return in the array "options" all the path options after expansion of the wildcard *
+int expand_star(char** path,int length,char* expanded_path,char** options,int*nb_options);
+
+#endif
