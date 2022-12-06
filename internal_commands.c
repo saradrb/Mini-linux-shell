@@ -393,89 +393,80 @@ int suffix(char *string, char *str, char *new_str)
   }
 }
 
-//return an array with all the path options after expansion of the wildcards
+//return in the array "options" all the path options after expansion of the wildcard *
 
-char** expand_star_wildcard(char* initial_path,char* expanded_path){
-char** options = malloc(sizeof(char*)*PATH_MAX);
-int i=0; //index of options
-int j=0;
-int length=0;
-//char* rest_path=malloc(sizeof(char)*PATH_MAX);
-char non_expended_path={'\0'};
-char rest_path[PATH_MAX]={'\0'};
-char path_option[PATH_MAX]={'\0'};;
-char** parsed_path = parse_path(initial_path,&length,"/");
-char parent_path[PATH_MAX]={'\0'};
-struct dirent* entry=NULL;
-DIR * current_dir=NULL;
-struct stat st;
+int expand_star(char** path,int length,char* expanded_path,char** options,int*nb_options){
 
-
-if(strcmp(expanded_path,"")!=0){ 
-  current_dir=opendir(expanded_path);
-  if(current_dir=-1){perror("opendir failed");exit(1);}
-  strcat(expanded_path,"/");
-  }
-else current_dir=opendir(current_rep);
-
-if(length==1){ 
-    while(entry=readdir(current_dir)){
-      stat(entry->d_name,&st);
-      if ( (!prefix(".",entry->d_name,NULL)) && (!S_ISDIR(st.st_mode)) ){
-          if(prefix("*",parsed_path[0],rest_path) && suffix(rest_path,entry->d_name,NULL)){
-            //there is a * prefix in filename
-
-              if(strcmp(expanded_path,"")!=0){
-                strcat(expanded_path,entry->d_name);
-                strcpy(options[i],expanded_path);
-              }
-              else {
-                strcpy(options[i],entry->d_name);
-                }
-              i++;
-          }//endif *
-          else{//there is no * in filename
-                if(strcmp(parsed_path[0],entry->d_name)){
-
-                  strcat(expanded_path,entry->d_name);
-                  strcpy(options[i],expanded_path);
-                  i++;
-                }
-             }
-      }//endif
-    }//endw
-}
-else{ 
-  if(prefix("*",parsed_path[j],rest_path)){
-      
-      if(strcmp(expanded_path,"")!=0){
-          current_dir=opendir(expanded_path);
-      }else {
-          current_dir=opendir(current_rep);
-      }
-     
-      while(entry=readdir(current_dir)){
-        stat(entry->d_name,&st);
-        if(S_ISDIR(st.st_mode)){
-          current_dir=opendir(entry->d_name);
-          strcat(expanded_path,entry->d_name);
-          non_expended_path =array_tostring(parsed_path+1,"/");
-          char** new_options =expand_star_wildcard(non_expended_path,expanded_path);
-          char_array_concat(options,new_options);
-          free(new_options);
+  struct dirent* entry=NULL;
+  DIR * current_dir=NULL;
+  struct stat st;
+  char* rest_path=malloc(sizeof(char)*PATH_MAX);
+  char* fullpath;
+  int i=0;
+  options;
+  //premier cas: le path contient un seul elem
+  
+    
+    boucle:  
+       if(strcmp(expanded_path,"")==0){
+        current_dir=opendir(current_rep);
         }
-        
+       else {current_dir=opendir(expanded_path);}
+       if (current_dir==NULL){perror("opendir failed");exit(1);} 
+       printf("current dir is %s\n",expanded_path); 
+
+    if(length==1){  //debut de la recherche 
+       
+        while (entry=readdir(current_dir)){
+        fullpath=malloc(sizeof(char)*PATH_MAX);
+        if(strcmp(expanded_path,"")!=0){
+          sprintf(fullpath,"%s/%s",expanded_path,entry->d_name);
+        }
+        else{
+        sprintf(fullpath,"%s",entry->d_name);}
+
+
+        if(stat(fullpath, &st)==-1){perror("stat failed ");}
+
+        //printf("%s IS %d\n",entry->d_name,S_ISDIR(st.st_mode));
+
+        if(prefix("*", path[i], rest_path)){
+            if(!prefix(".",entry->d_name,NULL) && suffix(rest_path, entry->d_name, NULL)){
+              printf("rest %s",rest_path);
+              //options[(*nb_options)] = malloc(sizeof(char) * PATH_MAX);
+              //strcat(options[*nb_options],fullpath);
+              options[*nb_options]=fullpath;
+              //printf("option est %s\n",options[*nb_options]);
+              (*nb_options)++;
+              //prefix("*", path[i], rest_path) &&
+
+            }
+        }
+        else{//filename doesn't contain a *
+            //strcat(options[*nb_options],fullpath);
+            
+            if((strcmp(path[i], entry->d_name) == 0) && suffix(".", entry->d_name, NULL)){
+              options[*nb_options]=fullpath;
+              //printf("option est %s\n",options[*nb_options]);
+              (*nb_options)++;
+            }     
+        }
+      
+       }  
+    }else{
+      
+      if(strcmp(expanded_path,"")!=0){strncat(expanded_path,"/",2);}
+      strncat(expanded_path,path[i],strlen(path[i]));
+      //printf("new expanded path is %s\n",expanded_path);
+      //chdir(expanded_path);
+      //chdir(current_dir);
+      closedir(current_dir);     
+      i++;
+      length--;
+      goto boucle;
     }
-
-  }//endif
-  else{ //there is no * in the dirname
-      strcat(expanded_path,parsed_path[0]);
-      char* non_expended_path =array_tostring(parsed_path+1,"/");
-      char** new_options =expand_star_wildcard(non_expended_path,expanded_path);
-      char_array_concat(options,new_options);
-      free(new_options);
-  }
+    closedir(current_dir);
+    free(rest_path);
+    free(fullpath);
+    return(0);
 }
-return options;
-}
-
