@@ -8,6 +8,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdio.h>
 #define MAX_ARGS_NUMBER 4096
 #define MAX_ARGS_STRLEN 4096
 #define PATH_MAX 4096

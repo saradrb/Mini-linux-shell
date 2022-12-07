@@ -327,23 +327,23 @@ int my_cd(char **arguments, int length) {
 
 // JOKERS
 // parse a path with a delimiter
-static char **parse_path(char *path, int *length, char *delimiters) {
-  char **list_arg = NULL;
-  char *arg = strtok(path, delimiters);
-  int nb_spaces = 0;
-  while (arg && (nb_spaces < MAX_ARGS_NUMBER)) {
-    nb_spaces++;
-    list_arg = realloc(list_arg, sizeof(char *) * nb_spaces);
-    if (list_arg == NULL) exit(-1);  // memory allocation failed
-    list_arg[nb_spaces - 1] = arg;
-    arg = strtok(NULL, delimiters);
-  }
-  list_arg = realloc(list_arg, sizeof(char *) * (nb_spaces + 1));
-  list_arg[nb_spaces] = NULL;
+// static char **parse_path(char *path, int *length, char *delimiters) {
+//   char **list_arg = NULL;
+//   char *arg = strtok(path, delimiters);
+//   int nb_spaces = 0;
+//   while (arg && (nb_spaces < MAX_ARGS_NUMBER)) {
+//     nb_spaces++;
+//     list_arg = realloc(list_arg, sizeof(char *) * nb_spaces);
+//     if (list_arg == NULL) exit(-1);  // memory allocation failed
+//     list_arg[nb_spaces - 1] = arg;
+//     arg = strtok(NULL, delimiters);
+//   }
+//   list_arg = realloc(list_arg, sizeof(char *) * (nb_spaces + 1));
+//   list_arg[nb_spaces] = NULL;
 
-  *length = nb_spaces;
-  return list_arg;
-}
+//   *length = nb_spaces;
+//   return list_arg;
+// }
 
 char *array_tostring(char **array_ofchar, int length, char *delemiter) {
   char *my_string = malloc(sizeof(char *));
@@ -402,7 +402,7 @@ int expand_star(char **path, int length, char *expanded_path, char **options,
   char *rest_path = malloc(sizeof(char) * PATH_MAX);
   char *fullpath;
   int i = 0;
-  options;
+  // options;
   // premier cas: le path contient un seul elem
 
 boucle:
@@ -419,7 +419,7 @@ boucle:
 
   if (length == 1) {  // debut de la recherche
 
-    while (entry = readdir(current_dir)) {
+    while ((entry = readdir(current_dir))) {
       fullpath = malloc(sizeof(char) * PATH_MAX);
       if (strcmp(expanded_path, "") != 0) {
         sprintf(fullpath, "%s/%s", expanded_path, entry->d_name);
