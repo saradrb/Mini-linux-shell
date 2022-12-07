@@ -1,13 +1,81 @@
+#include <errno.h>
+#include <fcntl.h>
 #include <readline/history.h>
 #include <readline/readline.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #include "internal_commands.h"
 
 extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
 extern int previous_return_value;
 
-/* Print prompt with color, containing the return value of
- * the last executed command and the path where we are
+/**
+ * @brief Execute every external command with or with out argument
+ *
+ * @param cmd command
+ * @param args array containing the command and his arguments
+ * @return the return value of the execution of the command : 0 for successed, 1
+ * if exec failed, 8 if exec successed but the command or argument is wrong
+ */
+static int extern_command(char *cmd, char **args) {
+  int exit_value = 0;
+  int return_value = 0;
+  // Create child process
+  pid_t pid_fork = fork();
+  switch (pid_fork) {
+    // If the fork has failed
+    case -1:
+      write(STDOUT_FILENO, "Error fork\n", 12);
+      previous_return_value = 1;
+      return 1;
+    case 0:
+      // Execute the command : if the execution fail, exit with a specific
+      // value
+      if (execvp(cmd, args) == -1) {
+        exit(8);
+      }
+    default:
+      // wait for the end of child process and take his exit value
+      waitpid(pid_fork, &exit_value, 0);
+      return_value = WEXITSTATUS(exit_value);
+      // if the execution of the command has failed
+      if (return_value == 8) {
+        char *res = strcat(args[0], " : Commande inconnu\n");
+        write(STDOUT_FILENO, res, strlen(res));
+        return return_value;
+      }
+      return return_value;
+  }
+}
+
+/**
+ * @brief Create an array with the command followed by list_arg
+ *
+ * @param length length of list_arg
+ * @param list_arg list of arguments
+ * @param cmd the command
+ * @return the fianl array or NULL
+ */
+static char **array_with_cmd_name(int length, char **list_arg, char *cmd) {
+  // allocate the memory
+  char **array = malloc(sizeof(char *) * (length + 2));
+  if (array == NULL) {
+    return NULL;
+  }
+  // fill the array
+  array[0] = cmd;
+  for (int i = 1; i <= length + 1; i++) {
+    array[i] = list_arg[i - 1];
+  }
+  return array;
+}
+
+/**
+ * @brief Print prompt with color, containing the return value of the last
+ * executed command and the path where we are
  */
 static void my_prompt() {
   // convert the previous return value into a char[]
@@ -33,10 +101,10 @@ static void my_prompt() {
   char *end_prompt = "\001\033[00m\002";
   int len = strlen(current_rep);
   // complete res with the absolute path, or with a simplification of the
-  // absolute path if length of path is more then 25 characters
+  // absolute path if length of path is more then 26 characters
   if (len > 26 - strlen(nbr)) {
     strcat(res, "...");
-    strcat(res, &current_rep[len - 22 + strlen(nbr) - 1]);
+    strcat(res, &current_rep[len - 23 + strlen(nbr)]);
   } else {
     strcat(res, current_rep);
   }
@@ -47,33 +115,28 @@ static void my_prompt() {
   }
 }
 
+// // function that execute external commands
 
-// function that execute external commands 
+// int external_cmd(char *cmd, char **list_arg, int length) {
+//   previous_return_value = 0;
+//   int val = 0;
+//   switch (fork()) {
+//     case 0:
+//       for (int i = 0; i < length; i++) {
+//         write(STDOUT_FILENO, *list_arg[i], sizeof(**list_arg));
+//       }
 
-int external_cmd(char* cmd,char ** list_arg,int length){
-  previous_return_value=0;
-  int val=0;
-  switch(fork()){
-    case 0:
-      for (int i = 0; i < length; i++)
-      {
-        write(STDOUT_FILENO,*list_arg[i],sizeof(**list_arg));
-      }
-    
-      if (execvp(cmd,list_arg)==-1){
-      perror("execvp");val=1;
+//       if (execvp(cmd, list_arg) == -1) {
+//         perror("execvp");
+//         val = 1;
 
-    default:
-      wait(NULL);
-      write(STDOUT_FILENO,"sara",4);
-      return val;
-
-
-
-  }
-
-  }
-}
+//         default:
+//           wait(NULL);
+//           write(STDOUT_FILENO, "sara", 4);
+//           return val;
+//       }
+//   }
+// }
 
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
@@ -99,7 +162,9 @@ static char **split_line(char *line, char **cmd, int *length,
   return list_arg;
 }
 
-// function that read the command line input and format it
+/**
+ * @brief function that read the command line input and format it
+ */
 static void read_cmd() {
   char *prompt_char = "$ ";
   int length = 0;
@@ -132,8 +197,14 @@ static void read_cmd() {
           if (strcmp(cmd, "pwd") == 0) {
             previous_return_value = my_pwd(list_arg, length);
           } else {
-            printf("%s: command not found\n", cmd);
-            previous_return_value = 1;
+            // create an array with the command followed by list_arg
+            char **array = array_with_cmd_name(length, list_arg, cmd);
+
+            if (array != NULL) {
+              previous_return_value = extern_command(cmd, array);
+              // free the memory allocated
+              free(array);
+            }
           }
         }
       }

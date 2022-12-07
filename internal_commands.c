@@ -7,7 +7,8 @@ int previous_return_value = 0;
 /* Exit the program with a certain value. If no value has been given, close
  * the program with the value the last function called has returned, otherwise
  * close it with the given value.
- * Return 1 if the given argument isn't valid (the program hasn't been closed) */
+ * Return 1 if the given argument isn't valid (the program hasn't been closed)
+ */
 int my_exit(char **arguments, int length) {
   if (length > 1) {
     write(STDOUT_FILENO, "exit: Too many arguments\n", 26);
@@ -27,15 +28,22 @@ int my_exit(char **arguments, int length) {
     }
     int value = atoi(arguments[0]);
     if (value > MAX_EXIT_VALUE) {
-        write(STDOUT_FILENO, "exit: Exit value too big\n", 26);
-        return 1;
+      write(STDOUT_FILENO, "exit: Exit value too big\n", 26);
+      return 1;
     }
     exit(atoi(arguments[0]));
   }
 }
 
-/* Search a directory in path between path[pos_path] and the first next '/' or
- * the end of path */
+/**
+ * @brief Search a directory in path between path[pos_path] and the first next
+ * '/' or the end of path
+ *
+ * @param path path
+ * @param pos_path index of the position where search start
+ * @param len length of path
+ * @return the directory found
+ */
 static char *directory(char *path, int pos_path, int len) {
   // allocation and management of the memory
   char *word = malloc(sizeof(char) * (len - pos_path + 2));
@@ -57,7 +65,13 @@ static char *directory(char *path, int pos_path, int len) {
   return word;
 }
 
-/* Delete a directory at the end of path (between path[pos] and a char '/') */
+/**
+ * @brief Delete a directory at the end of path (between path[pos] and a char
+ * '/')
+ * @param path path
+ * @param pos index where the deletion start
+ * @return index of the last caracter
+ */
 static int delete_directory(char *path, int pos) {
   do {
     path[pos] = '\0';
@@ -66,8 +80,12 @@ static int delete_directory(char *path, int pos) {
   return pos;
 }
 
-/* Take an absolute path and return a simplification of this path without the
- * . and .. directory */
+/**
+ * @brief Take an absolute path and return a simplification of this path without
+ * the . and .. directory
+ * @param path an absolute path
+ * @return simplification of path
+ */
 static char *get_final_path(char *path) {
   // verify if the first character is '/' (root)
   if (path[0] != '/') {
@@ -170,8 +188,14 @@ static int is_valid(char **arguments, int length, bool is_cd, char *option,
   return 0;
 }
 
-/* Write the absolute path interpreted logically if there is no option or if
- * the option is -L, or interpreted physicaly if the option is -P */
+/**
+ * @brief Write the absolute path interpreted logically if there is no option or
+ * if the option is -L, or interpreted physicaly if the option is -P
+ *
+ * @param arguments list of arguments
+ * @param length length of list of arguments
+ * @return return value of the execution of pwd
+ */
 int my_pwd(char **arguments, int length) {
   char option[3] = {'\0'};
   // check if the arguments are valid
@@ -212,7 +236,7 @@ int my_pwd(char **arguments, int length) {
  * If no option is given, or if the option given is '-L', interprete the given
  * path logically. If the option given is '-P', interprete it physically.
  * Return 0 if the directory has been successfully changed and 1 otherwise.
-*/
+ */
 int my_cd(char **arguments, int length) {
   char option[3] = {'\0'};
   char path[PATH_MAX] = {'\0'};
@@ -301,11 +325,11 @@ int my_cd(char **arguments, int length) {
   return 0;
 }
 
-// JOKERS 
-//parse a path with a delimiter
-static char **parse_path(char *path, int *length,char *delimiters) {
-  char **list_arg = NULL;          
-  char *arg = strtok(path, delimiters);  
+// JOKERS
+// parse a path with a delimiter
+static char **parse_path(char *path, int *length, char *delimiters) {
+  char **list_arg = NULL;
+  char *arg = strtok(path, delimiters);
   int nb_spaces = 0;
   while (arg && (nb_spaces < MAX_ARGS_NUMBER)) {
     nb_spaces++;
@@ -321,152 +345,131 @@ static char **parse_path(char *path, int *length,char *delimiters) {
   return list_arg;
 }
 
-
- char * array_tostring(char** array_ofchar,int length,char* delemiter){
-  char* my_string=malloc(sizeof(char*));
-  for (int i = 0; i < length; i++){
-    
-    strcat(my_string,array_ofchar[i]);
-    strcat(my_string,delemiter);
+char *array_tostring(char **array_ofchar, int length, char *delemiter) {
+  char *my_string = malloc(sizeof(char *));
+  for (int i = 0; i < length; i++) {
+    strcat(my_string, array_ofchar[i]);
+    strcat(my_string, delemiter);
   }
 
   return my_string;
-
 }
 
-char ** char_array_concat(char** array1,char** array2){
-  return array1;
-}
+char **char_array_concat(char **array1, char **array2) { return array1; }
 
-int prefix(char *string, char *str, char *new_str)
-{
-
-  if (strncmp(string, str, strlen(string)) == 0)
-  {
-    
-    if (strlen(str) == strlen(string))
-    {
-      
+int prefix(char *string, char *str, char *new_str) {
+  if (strncmp(string, str, strlen(string)) == 0) {
+    if (strlen(str) == strlen(string)) {
       (new_str) = NULL;
-    }
-    else
-    {
-      if (new_str != NULL)
-      {
-        
+    } else {
+      if (new_str != NULL) {
         strcpy(new_str, str + strlen(string));
         strcat(new_str, "\0");
       }
     }
     return 1;
-  }
-  else
-  {
+  } else {
     return 0;
   }
 }
 
-int suffix(char *string, char *str, char *new_str)
-{
+int suffix(char *string, char *str, char *new_str) {
   char *ending = str + strlen(str) - strlen(string);
   // printf("ending: %s\n",ending);
-  if (strcmp(string, ending) == 0)
-  {
-
-    if (strlen(str) == strlen(string))
-    {
+  if (strcmp(string, ending) == 0) {
+    if (strlen(str) == strlen(string)) {
       new_str = NULL;
-    }
-    else
-    {
-      if (new_str != NULL)
-      {
+    } else {
+      if (new_str != NULL) {
         strncpy(new_str, str, strlen(str) - strlen(ending));
         strcat(new_str, "\0");
       }
     }
     return 1;
-  }
-  else
-  {
+  } else {
     return 0;
   }
 }
 
-//return in the array "options" all the path options after expansion of the wildcard *
+// return in the array "options" all the path options after expansion of the
+// wildcard *
 
-int expand_star(char** path,int length,char* expanded_path,char** options,int*nb_options){
-
-  struct dirent* entry=NULL;
-  DIR * current_dir=NULL;
+int expand_star(char **path, int length, char *expanded_path, char **options,
+                int *nb_options) {
+  struct dirent *entry = NULL;
+  DIR *current_dir = NULL;
   struct stat st;
-  char* rest_path=malloc(sizeof(char)*PATH_MAX);
-  char* fullpath;
-  int i=0;
+  char *rest_path = malloc(sizeof(char) * PATH_MAX);
+  char *fullpath;
+  int i = 0;
   options;
-  //premier cas: le path contient un seul elem
-  
-    
-    boucle:  
-       if(strcmp(expanded_path,"")==0){
-        current_dir=opendir(current_rep);
+  // premier cas: le path contient un seul elem
+
+boucle:
+  if (strcmp(expanded_path, "") == 0) {
+    current_dir = opendir(current_rep);
+  } else {
+    current_dir = opendir(expanded_path);
+  }
+  if (current_dir == NULL) {
+    perror("opendir failed");
+    exit(1);
+  }
+  printf("current dir is %s\n", expanded_path);
+
+  if (length == 1) {  // debut de la recherche
+
+    while (entry = readdir(current_dir)) {
+      fullpath = malloc(sizeof(char) * PATH_MAX);
+      if (strcmp(expanded_path, "") != 0) {
+        sprintf(fullpath, "%s/%s", expanded_path, entry->d_name);
+      } else {
+        sprintf(fullpath, "%s", entry->d_name);
+      }
+
+      if (stat(fullpath, &st) == -1) {
+        perror("stat failed ");
+      }
+
+      // printf("%s IS %d\n",entry->d_name,S_ISDIR(st.st_mode));
+
+      if (prefix("*", path[i], rest_path)) {
+        if (!prefix(".", entry->d_name, NULL) &&
+            suffix(rest_path, entry->d_name, NULL)) {
+          printf("rest %s", rest_path);
+          // options[(*nb_options)] = malloc(sizeof(char) * PATH_MAX);
+          // strcat(options[*nb_options],fullpath);
+          options[*nb_options] = fullpath;
+          // printf("option est %s\n",options[*nb_options]);
+          (*nb_options)++;
+          // prefix("*", path[i], rest_path) &&
         }
-       else {current_dir=opendir(expanded_path);}
-       if (current_dir==NULL){perror("opendir failed");exit(1);} 
-       printf("current dir is %s\n",expanded_path); 
+      } else {  // filename doesn't contain a *
+        // strcat(options[*nb_options],fullpath);
 
-    if(length==1){  //debut de la recherche 
-       
-        while (entry=readdir(current_dir)){
-        fullpath=malloc(sizeof(char)*PATH_MAX);
-        if(strcmp(expanded_path,"")!=0){
-          sprintf(fullpath,"%s/%s",expanded_path,entry->d_name);
+        if ((strcmp(path[i], entry->d_name) == 0) &&
+            suffix(".", entry->d_name, NULL)) {
+          options[*nb_options] = fullpath;
+          // printf("option est %s\n",options[*nb_options]);
+          (*nb_options)++;
         }
-        else{
-        sprintf(fullpath,"%s",entry->d_name);}
-
-
-        if(stat(fullpath, &st)==-1){perror("stat failed ");}
-
-        //printf("%s IS %d\n",entry->d_name,S_ISDIR(st.st_mode));
-
-        if(prefix("*", path[i], rest_path)){
-            if(!prefix(".",entry->d_name,NULL) && suffix(rest_path, entry->d_name, NULL)){
-              printf("rest %s",rest_path);
-              //options[(*nb_options)] = malloc(sizeof(char) * PATH_MAX);
-              //strcat(options[*nb_options],fullpath);
-              options[*nb_options]=fullpath;
-              //printf("option est %s\n",options[*nb_options]);
-              (*nb_options)++;
-              //prefix("*", path[i], rest_path) &&
-
-            }
-        }
-        else{//filename doesn't contain a *
-            //strcat(options[*nb_options],fullpath);
-            
-            if((strcmp(path[i], entry->d_name) == 0) && suffix(".", entry->d_name, NULL)){
-              options[*nb_options]=fullpath;
-              //printf("option est %s\n",options[*nb_options]);
-              (*nb_options)++;
-            }     
-        }
-      
-       }  
-    }else{
-      
-      if(strcmp(expanded_path,"")!=0){strncat(expanded_path,"/",2);}
-      strncat(expanded_path,path[i],strlen(path[i]));
-      //printf("new expanded path is %s\n",expanded_path);
-      //chdir(expanded_path);
-      //chdir(current_dir);
-      closedir(current_dir);     
-      i++;
-      length--;
-      goto boucle;
+      }
     }
+  } else {
+    if (strcmp(expanded_path, "") != 0) {
+      strncat(expanded_path, "/", 2);
+    }
+    strncat(expanded_path, path[i], strlen(path[i]));
+    // printf("new expanded path is %s\n",expanded_path);
+    // chdir(expanded_path);
+    // chdir(current_dir);
     closedir(current_dir);
-    free(rest_path);
-    free(fullpath);
-    return(0);
+    i++;
+    length--;
+    goto boucle;
+  }
+  closedir(current_dir);
+  free(rest_path);
+  free(fullpath);
+  return (0);
 }
