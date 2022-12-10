@@ -326,24 +326,24 @@ int my_cd(char **arguments, int length) {
 }
 
 // JOKERS
-// parse a path with a delimiter
-// static char **parse_path(char *path, int *length, char *delimiters) {
-//   char **list_arg = NULL;
-//   char *arg = strtok(path, delimiters);
-//   int nb_spaces = 0;
-//   while (arg && (nb_spaces < MAX_ARGS_NUMBER)) {
-//     nb_spaces++;
-//     list_arg = realloc(list_arg, sizeof(char *) * nb_spaces);
-//     if (list_arg == NULL) exit(-1);  // memory allocation failed
-//     list_arg[nb_spaces - 1] = arg;
-//     arg = strtok(NULL, delimiters);
-//   }
-//   list_arg = realloc(list_arg, sizeof(char *) * (nb_spaces + 1));
-//   list_arg[nb_spaces] = NULL;
+//parse a path with a delimiter
+char **parse_path(char *path, int *length, char *delimiters) {
+  char **list_arg = NULL;
+  char *arg = strtok(path, delimiters);
+  int nb_spaces = 0;
+  while (arg && (nb_spaces < MAX_ARGS_NUMBER)) {
+    nb_spaces++;
+    list_arg = realloc(list_arg, sizeof(char *) * nb_spaces);
+    if (list_arg == NULL) exit(-1);  // memory allocation failed
+    list_arg[nb_spaces - 1] = arg;
+    arg = strtok(NULL, delimiters);
+  }
+  list_arg = realloc(list_arg, sizeof(char *) * (nb_spaces + 1));
+  list_arg[nb_spaces] = NULL;
 
-//   *length = nb_spaces;
-//   return list_arg;
-// }
+  *length = nb_spaces;
+  return list_arg;
+}
 
 char *array_tostring(char **array_ofchar, int length, char *delemiter) {
   char *my_string = malloc(sizeof(char *));
@@ -391,85 +391,99 @@ int suffix(char *string, char *str, char *new_str) {
   }
 }
 
-// return in the array "options" all the path options after expansion of the
-// wildcard *
+// function that return in the array "options" all the path options after expansion of the * wildcard
 
-int expand_star(char **path, int length, char *expanded_path, char **options,
-                int *nb_options) {
-  struct dirent *entry = NULL;
-  DIR *current_dir = NULL;
+int expand_star(char** path,int length,char* expanded_path,char** options,int*nb_options){
+
+  struct dirent* entry=NULL;
+  DIR * current_dir=NULL;
   struct stat st;
-  char *rest_path = malloc(sizeof(char) * PATH_MAX);
-  char *fullpath;
-  int i = 0;
-  // options;
-  // premier cas: le path contient un seul elem
+  char* rest_path=malloc(sizeof(char)*PATH_MAX);
+  char* fullpath;
+  int i=0;
 
-boucle:
-  if (strcmp(expanded_path, "") == 0) {
-    current_dir = opendir(current_rep);
-  } else {
-    current_dir = opendir(expanded_path);
-  }
-  if (current_dir == NULL) {
-    perror("opendir failed");
-    exit(1);
-  }
-  printf("current dir is %s\n", expanded_path);
+    expand:  
+       printf("current dir is %s\n",expanded_path); 
+       if(strcmp(expanded_path,"")==0){
+        current_dir=opendir(current_rep);
+        }
+       else {current_dir=opendir(expanded_path);}
+       if (current_dir==NULL){perror("opendir failed");return(1);} 
+       
+    if(length==1){  //case 1: path has one element 
+      //printf("path i is %s\n",path[length]); 
+      while ((entry=readdir(current_dir))){
+        fullpath=malloc(sizeof(char)*PATH_MAX);
+        if(strcmp(expanded_path,"")!=0){
+          sprintf(fullpath,"%s/%s",expanded_path,entry->d_name);
+        }
+        else{
+        sprintf(fullpath,"%s",entry->d_name);}
 
-  if (length == 1) {  // debut de la recherche
 
-    while ((entry = readdir(current_dir))) {
-      fullpath = malloc(sizeof(char) * PATH_MAX);
-      if (strcmp(expanded_path, "") != 0) {
-        sprintf(fullpath, "%s/%s", expanded_path, entry->d_name);
-      } else {
-        sprintf(fullpath, "%s", entry->d_name);
-      }
+        if(stat(fullpath, &st)==-1){perror("stat failed ");return(1);}
 
-      if (stat(fullpath, &st) == -1) {
-        perror("stat failed ");
-      }
+        //printf("%s IS %d\n",entry->d_name,S_ISDIR(st.st_mode));
 
-      // printf("%s IS %d\n",entry->d_name,S_ISDIR(st.st_mode));
-
-      if (prefix("*", path[i], rest_path)) {
-        if (!prefix(".", entry->d_name, NULL) &&
-            suffix(rest_path, entry->d_name, NULL)) {
-          printf("rest %s", rest_path);
+        if (prefix("*", path[i], rest_path)){
+        //printf("rest %s", rest_path);
+        if (!prefix(".", entry->d_name, NULL) && suffix(rest_path, entry->d_name, NULL))
+        {
           // options[(*nb_options)] = malloc(sizeof(char) * PATH_MAX);
           // strcat(options[*nb_options],fullpath);
           options[*nb_options] = fullpath;
           // printf("option est %s\n",options[*nb_options]);
           (*nb_options)++;
+
           // prefix("*", path[i], rest_path) &&
         }
-      } else {  // filename doesn't contain a *
-        // strcat(options[*nb_options],fullpath);
-
-        if ((strcmp(path[i], entry->d_name) == 0) &&
-            suffix(".", entry->d_name, NULL)) {
-          options[*nb_options] = fullpath;
-          // printf("option est %s\n",options[*nb_options]);
-          (*nb_options)++;
         }
+        else{//path doesn't contain a *
+            //strcat(options[*nb_options],fullpath);
+            
+            if((strcmp(path[i], entry->d_name) == 0) && suffix(".", entry->d_name, NULL)){
+              options[*nb_options]=fullpath;
+              //printf("option est %s\n",options[*nb_options]);
+              (*nb_options)++;
+            }     
+        }
+      
+      }  
+    }else{ //case 2: diractory
+      if(prefix("*",path[i],rest_path)){ //dir contains a *
+        length--;
+        path=&path[i+1];
+        while ((entry=readdir(current_dir))){
+
+          fullpath=malloc(sizeof(char)*PATH_MAX);
+          if(strcmp(expanded_path,"")!=0){
+          sprintf(fullpath,"%s/%s",expanded_path,entry->d_name);
+          }
+          else{
+          sprintf(fullpath,"%s",entry->d_name);}
+          
+          if(stat(fullpath, &st)==-1){perror("stat failed ");return(1);}
+
+          if(S_ISDIR(st.st_mode) && suffix(rest_path, entry->d_name, NULL)&& !prefix(".",entry->d_name,NULL)){
+            //printf("current pos in the path is %d\n",path+i);
+            expand_star(path,length,fullpath,options,nb_options);
+          }
+        }
+
+      }else {//dir doesn't contain a *
+
+        if(strcmp(expanded_path,"")!=0){strncat(expanded_path,"/",2);}
+        strncat(expanded_path,path[i],strlen(path[i]));
+        closedir(current_dir);     
+        i++;
+        length--;
+        goto expand;
+
       }
+  
     }
-  } else {
-    if (strcmp(expanded_path, "") != 0) {
-      strncat(expanded_path, "/", 2);
-    }
-    strncat(expanded_path, path[i], strlen(path[i]));
-    // printf("new expanded path is %s\n",expanded_path);
-    // chdir(expanded_path);
-    // chdir(current_dir);
     closedir(current_dir);
-    i++;
-    length--;
-    goto boucle;
-  }
-  closedir(current_dir);
-  free(rest_path);
-  free(fullpath);
-  return (0);
+    free(rest_path);
+    free(fullpath);
+    return(0);
 }

@@ -36,7 +36,10 @@ int my_pwd(char **arguments, int length);
 */
 int my_cd(char **arguments, int length);
 
-//return in the array "options" all the path options after expansion of the wildcard *
+// function that return in the array "options" all the path options after expansion of the * wildcard
 int expand_star(char** path,int length,char* expanded_path,char** options,int*nb_options);
+
+//parse a path with a delimiter
+char **parse_path(char *path, int *length, char *delimiters);
 
 #endif
