@@ -45,4 +45,10 @@ char **parse_path(char *path, int *length, char *delimiters);
 //free the memory allocated for the structure char**
 void free_struct(char **my_struct,int size);
 
+// function that checks if an array of char* contains an element that contains a wildcard 
+int contains_wildcard(char ** tab_argument,int length,const char* wildcard);
+
+// function that concatenate tab2 to tab1 starting at index position
+char ** concat(char** tab1,int size1,char** tab2,int size2,int position);
+
 #endif

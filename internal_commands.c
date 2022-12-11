@@ -505,3 +505,45 @@ void free_struct(char **my_struct,int size){
   free(my_struct);
   
 }
+
+// function that checks if an array of char* contains an element that contains a wildcard 
+int contains_wildcard(char ** tab_argument,int length,const char* wildcard){
+  for (int i = 0; i < length; i++)
+  {
+    if(strstr(tab_argument[i],wildcard)) return i;
+  }
+  return(-1);
+}
+
+// function that concatenate tab2 to tab1 starting at index position
+char ** concat(char** tab1,int size1,char** tab2,int size2,int position){
+  char ** tab3=malloc(sizeof(char*)*(size1+size2-1));
+  int j=0;
+  if (size2 != 0){
+    for (int i = 0; i < position; i++)
+    {
+      
+      tab3[i]=tab1[j];
+      j++;
+    }
+    for (int i = position; i < size2+position; i++)
+    {
+    
+      tab3[i]=tab2[i-position];
+
+    }
+    if(position<size1-1){
+      j++; //increment th index to jump position in tab1 (position of the argument expanded)
+      for (int i = size2+position; i < size1+size2-1; i++)
+      {
+        
+        tab3[i]=tab1[j];
+        j++;
+      }
+    }
+  
+  }
+  else {tab3=tab1;}
+  return tab3;
+    
+}
