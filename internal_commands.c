@@ -399,9 +399,10 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
   DIR * current_dir=NULL;
   struct stat st;
   char* rest_path=malloc(sizeof(char)*PATH_MAX);
-  char* fullpath;
+  char* fullpath=malloc(sizeof(char)*PATH_MAX);;
   int i=0;
-
+  
+    
     expand:  
        printf("current dir is %s\n",expanded_path); 
        if(strcmp(expanded_path,"")==0){
@@ -413,7 +414,7 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
     if(length==1){  //case 1: path has one element 
       //printf("path i is %s\n",path[length]); 
       while ((entry=readdir(current_dir))){
-        fullpath=malloc(sizeof(char)*PATH_MAX);
+        
         if(strcmp(expanded_path,"")!=0){
           sprintf(fullpath,"%s/%s",expanded_path,entry->d_name);
         }
@@ -431,7 +432,8 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
         {
           // options[(*nb_options)] = malloc(sizeof(char) * PATH_MAX);
           // strcat(options[*nb_options],fullpath);
-          options[*nb_options] = fullpath;
+          options[*nb_options]=malloc(sizeof(char)*PATH_MAX);
+          sprintf(options[*nb_options],"%s",fullpath);
           // printf("option est %s\n",options[*nb_options]);
           (*nb_options)++;
 
@@ -442,7 +444,9 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
             //strcat(options[*nb_options],fullpath);
             
             if((strcmp(path[i], entry->d_name) == 0) && suffix(".", entry->d_name, NULL)){
-              options[*nb_options]=fullpath;
+              options[*nb_options]=malloc(sizeof(char)*PATH_MAX);
+              sprintf(options[*nb_options],"%s",fullpath);
+              //options[*nb_options]=fullpath;
               //printf("option est %s\n",options[*nb_options]);
               (*nb_options)++;
             }     
@@ -480,7 +484,7 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
         goto expand;
 
       }
-  
+      
     }
     closedir(current_dir);
     free(rest_path);
