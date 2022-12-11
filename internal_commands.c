@@ -393,23 +393,25 @@ int suffix(char *string, char *str, char *new_str) {
 
 // function that return in the array "options" all the path options after expansion of the * wildcard
 
-int expand_star(char** path,int length,char* expanded_path,char** options,int*nb_options){
+int expand_star(char** path,int length,char* expanded_path,char** options,int* nb_options){
 
   struct dirent* entry=NULL;
   DIR * current_dir=NULL;
   struct stat st;
   char* rest_path=malloc(sizeof(char)*PATH_MAX);
-  char* fullpath=malloc(sizeof(char)*PATH_MAX);;
+  memset(rest_path,0,sizeof(char)*PATH_MAX);
+  char* fullpath=malloc(sizeof(char)*PATH_MAX);
+  memset(fullpath,0,sizeof(char)*PATH_MAX);
   int i=0;
   
     
-    expand:  
-       printf("current dir is %s\n",expanded_path); 
-       if(strcmp(expanded_path,"")==0){
-        current_dir=opendir(current_rep);
-        }
-       else {current_dir=opendir(expanded_path);}
-       if (current_dir==NULL){perror("opendir failed");return(1);} 
+  expand:  
+    //printf("current dir is %s\n",expanded_path); 
+    if(strcmp(expanded_path,"")==0){
+      current_dir=opendir(current_rep);
+    }
+    else {current_dir=opendir(expanded_path);}
+    if (current_dir==NULL){perror("opendir failed");free(rest_path);free(fullpath);return(1);} 
        
     if(length==1){  //case 1: path has one element 
       //printf("path i is %s\n",path[length]); 
@@ -422,7 +424,7 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
         sprintf(fullpath,"%s",entry->d_name);}
 
 
-        if(stat(fullpath, &st)==-1){perror("stat failed ");return(1);}
+        if(stat(fullpath, &st)==-1){perror("stat failed ");free(rest_path);free(fullpath);return(1);}
 
         //printf("%s IS %d\n",entry->d_name,S_ISDIR(st.st_mode));
 
@@ -453,23 +455,23 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
         }
       
       }  
+
     }else{ //case 2: diractory
       if(prefix("*",path[i],rest_path)){ //dir contains a *
         length--;
         path=&path[i+1];
         while ((entry=readdir(current_dir))){
-
-          fullpath=malloc(sizeof(char)*PATH_MAX);
+          //fullpath=malloc(sizeof(char)*PATH_MAX);
           if(strcmp(expanded_path,"")!=0){
           sprintf(fullpath,"%s/%s",expanded_path,entry->d_name);
           }
           else{
           sprintf(fullpath,"%s",entry->d_name);}
           
-          if(stat(fullpath, &st)==-1){perror("stat failed ");return(1);}
+          if(stat(fullpath, &st)==-1){perror("stat failed ");free(rest_path);free(fullpath);return(1);}
 
           if(S_ISDIR(st.st_mode) && suffix(rest_path, entry->d_name, NULL)&& !prefix(".",entry->d_name,NULL)){
-            //printf("current pos in the path is %d\n",path+i);
+            printf("current fullpath path is %s\n",fullpath);
             expand_star(path,length,fullpath,options,nb_options);
           }
         }
@@ -485,9 +487,21 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
 
       }
       
+      
     }
     closedir(current_dir);
     free(rest_path);
     free(fullpath);
     return(0);
+   
+}
+
+//free the memory allocated for the structure char**
+void free_struct(char **my_struct,int size){
+  for (int i = 0; i < size; i++)
+  {
+    free(my_struct[i]);
+  }
+  free(my_struct);
+  
 }

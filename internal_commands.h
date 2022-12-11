@@ -42,4 +42,7 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int*nb
 //parse a path with a delimiter
 char **parse_path(char *path, int *length, char *delimiters);
 
+//free the memory allocated for the structure char**
+void free_struct(char **my_struct,int size);
+
 #endif
