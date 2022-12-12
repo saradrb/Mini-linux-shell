@@ -51,4 +51,10 @@ int contains_wildcard(char ** tab_argument,int length,const char* wildcard);
 // function that concatenate tab2 to tab1 starting at index position
 char ** concat(char** tab1,int size1,char** tab2,int size2,int position);
 
+//concatenate to tab1 an element 
+char** concat_elem(char** tab1,int *size,char* elem);
+
+//concatenate to tab2 to tab1
+char** concat_tab(char **tab1,int *size,char** tab2, int size2);
+
 #endif

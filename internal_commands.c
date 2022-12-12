@@ -328,9 +328,17 @@ int my_cd(char **arguments, int length) {
 // JOKERS
 //parse a path with a delimiter
 char **parse_path(char *path, int *length, char *delimiters) {
-  char **list_arg = NULL;
-  char *arg = strtok(path, delimiters);
+  char **list_arg = NULL; 
+  char *arg=NULL;
   int nb_spaces = 0;
+  if(path[0]=='/'){
+    nb_spaces=1;
+    list_arg = realloc(list_arg, sizeof(char *) * nb_spaces);
+    char* myslash="/";
+    if (list_arg == NULL) exit(-1);  // memory allocation failed
+    list_arg[nb_spaces - 1] = myslash;
+  }
+  arg = strtok(path, delimiters);
   while (arg && (nb_spaces < MAX_ARGS_NUMBER)) {
     nb_spaces++;
     list_arg = realloc(list_arg, sizeof(char *) * nb_spaces);
@@ -411,7 +419,7 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int* n
       current_dir=opendir(current_rep);
     }
     else {current_dir=opendir(expanded_path);}
-    if (current_dir==NULL){perror("opendir failed");free(rest_path);free(fullpath);return(1);} 
+    if (current_dir==NULL){free(rest_path);free(fullpath);return(1);} 
        
     if(length==1){  //case 1: path has one element 
       //printf("path i is %s\n",path[length]); 
@@ -426,30 +434,24 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int* n
 
         if(stat(fullpath, &st)==-1){perror("stat failed ");free(rest_path);free(fullpath);return(1);}
 
-        //printf("%s IS %d\n",entry->d_name,S_ISDIR(st.st_mode));
-
         if (prefix("*", path[i], rest_path)){
-        //printf("rest %s", rest_path);
+        
         if (!prefix(".", entry->d_name, NULL) && suffix(rest_path, entry->d_name, NULL))
         {
-          // options[(*nb_options)] = malloc(sizeof(char) * PATH_MAX);
-          // strcat(options[*nb_options],fullpath);
+          
           options[*nb_options]=malloc(sizeof(char)*PATH_MAX);
           sprintf(options[*nb_options],"%s",fullpath);
-          // printf("option est %s\n",options[*nb_options]);
           (*nb_options)++;
 
-          // prefix("*", path[i], rest_path) &&
         }
         }
         else{//path doesn't contain a *
-            //strcat(options[*nb_options],fullpath);
             
-            if((strcmp(path[i], entry->d_name) == 0) && suffix(".", entry->d_name, NULL)){
+            
+            if((strcmp(path[i], entry->d_name) == 0) && !suffix(".", entry->d_name, NULL)){
+
               options[*nb_options]=malloc(sizeof(char)*PATH_MAX);
               sprintf(options[*nb_options],"%s",fullpath);
-              //options[*nb_options]=fullpath;
-              //printf("option est %s\n",options[*nb_options]);
               (*nb_options)++;
             }     
         }
@@ -461,7 +463,7 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int* n
         length--;
         path=&path[i+1];
         while ((entry=readdir(current_dir))){
-          //fullpath=malloc(sizeof(char)*PATH_MAX);
+          
           if(strcmp(expanded_path,"")!=0){
           sprintf(fullpath,"%s/%s",expanded_path,entry->d_name);
           }
@@ -471,14 +473,14 @@ int expand_star(char** path,int length,char* expanded_path,char** options,int* n
           if(stat(fullpath, &st)==-1){perror("stat failed ");free(rest_path);free(fullpath);return(1);}
 
           if(S_ISDIR(st.st_mode) && suffix(rest_path, entry->d_name, NULL)&& !prefix(".",entry->d_name,NULL)){
-            printf("current fullpath path is %s\n",fullpath);
+            
             expand_star(path,length,fullpath,options,nb_options);
           }
         }
 
       }else {//dir doesn't contain a *
 
-        if(strcmp(expanded_path,"")!=0){strncat(expanded_path,"/",2);}
+        if(strcmp(expanded_path,"")!=0 && strcmp(expanded_path,"/")!=0){strncat(expanded_path,"/",2);}
         strncat(expanded_path,path[i],strlen(path[i]));
         closedir(current_dir);     
         i++;
@@ -515,9 +517,18 @@ int contains_wildcard(char ** tab_argument,int length,const char* wildcard){
   return(-1);
 }
 
-// function that concatenate tab2 to tab1 starting at index position
+
+/**
+ * @brief concatenate tab2 to tab1 starting at index position
+ * @param tab1 first array 
+ * @param size1 length of  tab1
+ * @param tab2 second array 
+ * @param size2 length of tab2
+ * @param position index at which concat start inserting tab2 
+ * @return the fianl array tab3 with concatenation of tab1 and tab2 or return tab1 if tab2 is empty
+ */
 char ** concat(char** tab1,int size1,char** tab2,int size2,int position){
-  char ** tab3=malloc(sizeof(char*)*(size1+size2-1));
+  char ** tab3=malloc(sizeof(char*)*(size1+size2));
   int j=0;
   if (size2 != 0){
     for (int i = 0; i < position; i++)
@@ -533,7 +544,7 @@ char ** concat(char** tab1,int size1,char** tab2,int size2,int position){
 
     }
     if(position<size1-1){
-      j++; //increment th index to jump position in tab1 (position of the argument expanded)
+      j++; //increment the index to jump position in tab1 (position of the argument expanded)
       for (int i = size2+position; i < size1+size2-1; i++)
       {
         
@@ -543,7 +554,36 @@ char ** concat(char** tab1,int size1,char** tab2,int size2,int position){
     }
   
   }
-  else {tab3=tab1;}
+  else {
+    for (int i = 0; i < size1; i++)
+    {
+      
+      tab3[i]=tab1[i];
+
+    }
+  }
+  tab3[size1+size2-1]=NULL;
   return tab3;
     
+}
+
+char ** concat_elem(char** tab1,int *size,char* elem){
+  tab1=realloc(tab1,sizeof(char*)*(*size+2));
+  tab1[*size]=elem;
+  (*size)++;
+  tab1[*size]=NULL;
+  return tab1;
+}
+
+char** concat_tab(char **tab1,int *size,char** tab2, int size2){
+  tab1=realloc(tab1,sizeof(char*)*((*size)+size2+1));
+  for (int i = (*size); i < (*size)+size2; i++)
+  {
+    
+    tab1[i]=tab2[i-(*size)];
+    
+  }
+  tab1[(*size)+size2]=NULL;
+  *size=(*size)+size2;
+  return(tab1);
 }

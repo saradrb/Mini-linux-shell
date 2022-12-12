@@ -54,19 +54,19 @@ static int extern_command(char *cmd, char **args) {
  * @param cmd the command
  * @return the fianl array or NULL
  */
-static char **array_with_cmd_name(int length, char **list_arg, char *cmd) {
-  // allocate the memory
-  char **array = malloc(sizeof(char *) * (length + 2));
-  if (array == NULL) {
-    return NULL;
-  }
-  // fill the array
-  array[0] = cmd;
-  for (int i = 1; i <= length + 1; i++) {
-    array[i] = list_arg[i - 1];
-  }
-  return array;
-}
+// static char **array_with_cmd_name(int length, char **list_arg, char *cmd) {
+//   // allocate the memory
+//   char **array = malloc(sizeof(char *) * (length + 2));
+//   if (array == NULL) {
+//     return NULL;
+//   }
+//   // fill the array
+//   array[0] = cmd;
+//   for (int i = 1; i <= length + 1; i++) {
+//     array[i] = list_arg[i - 1];
+//   }
+//   return array;
+// }
 
 /**
  * @brief Print prompt with color, containing the return value of the last
@@ -110,28 +110,6 @@ static void my_prompt() {
   }
 }
 
-// // function that execute external commands
-
-// int external_cmd(char *cmd, char **list_arg, int length) {
-//   previous_return_value = 0;
-//   int val = 0;
-//   switch (fork()) {
-//     case 0:
-//       for (int i = 0; i < length; i++) {
-//         write(STDOUT_FILENO, *list_arg[i], sizeof(**list_arg));
-//       }
-
-//       if (execvp(cmd, list_arg) == -1) {
-//         perror("execvp");
-//         val = 1;
-
-//         default:
-//           wait(NULL);
-//           write(STDOUT_FILENO, "sara", 4);
-//           return val;
-//       }
-//   }
-// }
 
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
@@ -164,6 +142,8 @@ static void read_cmd() {
   char *prompt_char = "$ ";
   int length = 0;
   char *cmd = " ";
+  int nb_parts=0;
+
   while (1) {
     my_prompt();
     // read the command line input
@@ -192,24 +172,60 @@ static void read_cmd() {
           if (strcmp(cmd, "pwd") == 0) {
             previous_return_value = my_pwd(list_arg, length);
           } else {
-            // create an array with the command followed by list_arg
-            char **array = array_with_cmd_name(length, list_arg, cmd);
+            //char** my_args=array_with_cmd_name(length,list_arg,cmd);
+            //length++;
+            //test if there is an argument that contains a *
+            int size=0;
+            char** args_extanded=NULL;
+            args_extanded=concat_elem(args_extanded,&size,cmd);
+            
+            for (int i = 0; i < length; i++)
+            {
+              if(strstr(list_arg[i],"*")){
+                
+              //then expand the star and return an array with all the path options 
+                char* expanded_path=malloc(sizeof(char)*PATH_MAX);
+                memset(expanded_path,0,sizeof(char)*PATH_MAX);
 
-            if (array != NULL) {
-              previous_return_value = extern_command(cmd, array);
-              // free the memory allocated
-              free(array);
+                char ** mypath=parse_path(list_arg[i],&nb_parts,"/");
+                // printf("the args are %d:\n",nb_parts);
+                // for (int i = 0; i < nb_parts; i++)
+                // {
+                //   printf("%s\n",mypath[i]);
+                // }
+                int nb_options=0;
+                char** options=malloc(sizeof(char*)*PATH_MAX);
+
+                expand_star(mypath,nb_parts,expanded_path,options,&nb_options);
+
+                //concat final array to the argument array
+                args_extanded=concat_tab(args_extanded,&size,options,nb_options);
+                
+
+                //free the allocated memory
+                free(options);
+                free(mypath);
+                free(expanded_path);
+              }else{
+                
+                args_extanded=concat_elem(args_extanded,&size,list_arg[i]);
+                
+            
+              }
+            }//expanding the path
+
+            //execute external command with the new extanded array of args
+            
+            previous_return_value = extern_command(cmd,args_extanded);
+            free(args_extanded);
             }
           }
+          }
+          free(list_arg);
         }
-      }
-
-      // free the memory allocated
-      free(list_arg);
       free(line);
-    }
-  }
-}
+    } 
+ }
 
 int main(int argc, char const *argv[]) {
   rl_outstream = stderr;
