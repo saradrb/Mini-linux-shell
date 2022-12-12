@@ -569,7 +569,8 @@ char ** concat(char** tab1,int size1,char** tab2,int size2,int position){
 
 char ** concat_elem(char** tab1,int *size,char* elem){
   tab1=realloc(tab1,sizeof(char*)*(*size+2));
-  tab1[*size]=elem;
+  tab1[*size]=malloc(sizeof(char)*PATH_MAX);;
+  sprintf(tab1[*size],"%s",elem);
   (*size)++;
   tab1[*size]=NULL;
   return tab1;

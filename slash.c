@@ -38,7 +38,7 @@ static int extern_command(char *cmd, char **args) {
       return_value = WEXITSTATUS(exit_value);
       // if the execution of the command has failed
       if (return_value == 8) {
-        char *res = strcat(args[0], " : Commande inconnu\n");
+        char *res = strcat(args[0], " : command not found\n");
         write(STDOUT_FILENO, res, strlen(res));
         return return_value;
       }
@@ -201,7 +201,7 @@ static void read_cmd() {
                 //concat final array to the argument array
                 args_extanded=concat_tab(args_extanded,&size,options,nb_options);
                 
-
+                
                 //free the allocated memory
                 free(options);
                 free(mypath);
@@ -217,7 +217,7 @@ static void read_cmd() {
             //execute external command with the new extanded array of args
             
             previous_return_value = extern_command(cmd,args_extanded);
-            free(args_extanded);
+            free_struct(args_extanded,size);
             }
           }
           }
