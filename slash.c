@@ -31,7 +31,7 @@ static int extern_command(char *cmd, char **args) {
       // value
       if (execvp(cmd, args) == -1) {
        
-        exit(WEXITSTATUS(exit_value));
+        exit(1);
       }
     default:
       // wait for the end of child process and take his exit value
