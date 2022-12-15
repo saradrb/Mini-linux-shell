@@ -179,7 +179,24 @@ static void read_cmd() {
             //test if there is an argument that contains a *
             int size=0;
             char** args_extanded=NULL;
-            args_extanded=concat_elem(args_extanded,&size,cmd);
+            int nb_cmds=0;
+            if(strstr(cmd,"*")){
+              char* expanded_path=malloc(sizeof(char)*PATH_MAX);
+              memset(expanded_path,0,sizeof(char)*PATH_MAX);
+              char**mypath=parse_path(cmd,&nb_parts,"/");
+              char ** new_cmd = malloc(sizeof(char*)*10);
+              expand_star(mypath,1,expanded_path,new_cmd,&nb_cmds);
+              free(mypath);
+              free(expanded_path);
+              if(nb_cmds){
+                args_extanded=concat_tab(args_extanded,&size,new_cmd,nb_cmds);
+                cmd=args_extanded[0];
+                }
+              free(new_cmd);
+              
+            }
+            else{args_extanded=concat_elem(args_extanded,&size,cmd);}
+            
             
             for (int i = 0; i < length; i++)
             {

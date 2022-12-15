@@ -330,6 +330,7 @@ int my_cd(char **arguments, int length) {
 char **parse_path(char *path, int *length, char *delimiters) {
   char **list_arg = NULL; 
   char *arg=NULL;
+  *length=0;
   int nb_spaces = 0;
   if(path[0]=='/'){
     nb_spaces=1;
