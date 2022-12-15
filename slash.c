@@ -185,7 +185,7 @@ static void read_cmd() {
               memset(expanded_path,0,sizeof(char)*PATH_MAX);
               char**mypath=parse_path(cmd,&nb_parts,"/");
               char ** new_cmd = malloc(sizeof(char*)*10);
-              expand_star(mypath,1,expanded_path,new_cmd,&nb_cmds);
+              expand_star(mypath,nb_parts,expanded_path,new_cmd,&nb_cmds);
               free(mypath);
               free(expanded_path);
               if(nb_cmds){
