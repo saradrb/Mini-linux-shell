@@ -30,8 +30,9 @@ static int extern_command(char *cmd, char **args) {
       // Execute the command : if the execution fail, exit with a specific
       // value
       if (execvp(cmd, args) == -1) {
-       
+        perror("");
         exit(1);
+        
       }
     default:
       // wait for the end of child process and take his exit value
