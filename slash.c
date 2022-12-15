@@ -32,18 +32,12 @@ static int extern_command(char *cmd, char **args) {
       if (execvp(cmd, args) == -1) {
         perror("");
         exit(1);
-        
       }
     default:
       // wait for the end of child process and take his exit value
       waitpid(pid_fork, &exit_value, 0);
       return_value = WEXITSTATUS(exit_value);
       // if the execution of the command has failed
-      if (return_value == 8) {
-        char *res = strcat(args[0], " : command not found\n");
-        write(STDOUT_FILENO, res, strlen(res));
-        return return_value;
-      }
       return return_value;
   }
 }
@@ -163,20 +157,7 @@ static void read_cmd() {
 
       // split the line
       char **list_arg = split_line(line, &cmd, &length, " ");
-
-      // exec command
-      if (strcmp(cmd, "exit") == 0) {
-        previous_return_value = my_exit(list_arg, length);
-      } else {
-        if (strcmp(cmd, "cd") == 0) {
-          previous_return_value = my_cd(list_arg, length);
-        } else {
-          if (strcmp(cmd, "pwd") == 0) {
-            previous_return_value = my_pwd(list_arg, length);
-          } else {
-            //char** my_args=array_with_cmd_name(length,list_arg,cmd);
-            //length++;
-            //test if there is an argument that contains a *
+        //test if there is an argument that contains a *
             int size=0;
             char** args_extanded=NULL;
             int nb_cmds=0;
@@ -188,15 +169,15 @@ static void read_cmd() {
               expand_star(mypath,nb_parts,expanded_path,new_cmd,&nb_cmds);
               free(mypath);
               free(expanded_path);
+              
               if(nb_cmds){
                 args_extanded=concat_tab(args_extanded,&size,new_cmd,nb_cmds);
                 cmd=args_extanded[0];
                 }
               free(new_cmd);
               
-            }
-            else{args_extanded=concat_elem(args_extanded,&size,cmd);}
-            
+              }
+              else{args_extanded=concat_elem(args_extanded,&size,cmd);}
             
             for (int i = 0; i < length; i++)
             {
@@ -207,11 +188,6 @@ static void read_cmd() {
                 memset(expanded_path,0,sizeof(char)*PATH_MAX);
 
                 char ** mypath=parse_path(list_arg[i],&nb_parts,"/");
-                // printf("the args are %d:\n",nb_parts);
-                // for (int i = 0; i < nb_parts; i++)
-                // {
-                //   printf("%s\n",mypath[i]);
-                // }
                 int nb_options=0;
                 char** options=malloc(sizeof(char*)*PATH_MAX);
 
@@ -228,18 +204,29 @@ static void read_cmd() {
               }else{
                 
                 args_extanded=concat_elem(args_extanded,&size,list_arg[i]);
-                
-            
+          
               }
             }//expanding the path
 
+      
+
+      // exec command
+      if (strcmp(cmd, "exit") == 0) {
+        previous_return_value = my_exit(args_extanded+1, length);
+      } else {
+        if (strcmp(cmd, "cd") == 0) {
+          previous_return_value = my_cd(args_extanded+1, length);
+        } else {
+          if (strcmp(cmd, "pwd") == 0) {
+            previous_return_value = my_pwd(args_extanded+1, length);
+          } else {
+          
             //execute external command with the new extanded array of args
-            
             previous_return_value = extern_command(cmd,args_extanded);
-            free_struct(args_extanded,size);
             }
           }
           }
+          free_struct(args_extanded,size);
           free(list_arg);
         }
       free(line);
