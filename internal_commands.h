@@ -1,4 +1,4 @@
-#ifndef INTERCOMMANDS_H
+#ifndef INTERNAL_COMMANDS_H
 #define INTERNAL_COMMANDS_H
 #include <ctype.h>
 #include <stdbool.h>
