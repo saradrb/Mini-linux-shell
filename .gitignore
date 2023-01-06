@@ -1,2 +1,7 @@
 .sy5-2022-2023-projet-slash-autotests.nosync
 .vscode/
+
+signal.o
+internal_commands.o
+slash.o
+slash
