@@ -1,7 +1,9 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <sys/wait.h>
+
 #include "internal_commands.h"
+#include "library/string.c"
 
 extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
@@ -71,7 +73,8 @@ static int extern_command(char *cmd, char **args) {
 static void my_prompt() {
   // convert the previous return value into a char[]
   char nbr[6] = {'\0'};
-  sprintf(nbr, "%d", previous_return_value);
+  if (previous_return_value == 255) strncpy(nbr, "SIG", 4);
+  else sprintf(nbr, "%d", previous_return_value);
 
   char res[50] = {'\0'};
   // complete res with green if the last return value is 0, and with red
@@ -144,19 +147,20 @@ static void read_cmd() {
     my_prompt();
     // read the command line input
     char *line = readline(prompt_char);
+    char *trimmed_line = trim(line);
 
     // if the file has ended, exit the program
-    if (line == NULL) {
+    if (trimmed_line == NULL) {
       write(STDOUT_FILENO, "\n", 1);
       my_exit(NULL, 0);
     }
 
     // if the line isnt empty
-    if (line && *line) {
-      add_history(line);
+    if (trimmed_line && *trimmed_line) {
+      add_history(trimmed_line);
 
       // split the line
-      char **list_arg = split_line(line, &cmd, &length, " ");
+      char **list_arg = split_line(trimmed_line, &cmd, &length, " ");
         //test if there is an argument that contains a *
             int size=0;
             char** args_extanded=NULL;
@@ -230,6 +234,7 @@ static void read_cmd() {
           free(list_arg);
         }
       free(line);
+      free(trimmed_line);
     } 
  }
 

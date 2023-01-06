@@ -3,7 +3,7 @@ CFLAGS = -Wall -g -pedantic
 LDLIBS = -lreadline
 
 slash : slash.o internal_commands.o
-	$(CC) -o slash slash.o internal_commands.o $(LDLIBS)
+	$(CC) -o slash slash.o internal_commands.o $(LDLIBS) -Ilibrary
 
 internal_commands.o : internal_commands.c internal_commands.h
 	$(CC) $(CFLAGS) -c -o internal_commands.o internal_commands.c
