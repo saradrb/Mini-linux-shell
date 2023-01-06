@@ -1,9 +1,11 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <sys/wait.h>
+#include <stdbool.h>
 
-#include "internal_commands.h"
 #include "library/string.c"
+#include "internal_commands.h"
+#include "signal.h"
 
 extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
@@ -18,7 +20,7 @@ extern int previous_return_value;
  * if exec failed, 8 if exec successed but the command or argument is wrong
  */
 static int extern_command(char *cmd, char **args) {
-  int exit_value = 0;
+  int status = 0;
   int return_value = 0;
   // Create child process
   pid_t pid_fork = fork();
@@ -26,19 +28,21 @@ static int extern_command(char *cmd, char **args) {
     // If the fork has failed
     case -1:
       write(STDOUT_FILENO, "Error fork\n", 12);
-      previous_return_value = 1;
       return 1;
     case 0:
       // Execute the command : if the execution fail, exit with a specific
       // value
-      if (execvp(cmd, args) == -1) {
-        perror("");
-        exit(1);
-      }
+      treat_signal(false);
+      execvp(cmd, args);
+      exit(127);
     default:
       // wait for the end of child process and take his exit value
-      waitpid(pid_fork, &exit_value, 0);
-      return_value = WEXITSTATUS(exit_value);
+      waitpid(pid_fork, &status, 0);
+      if (WIFSIGNALED(status)) {
+        return_value = 255;
+      } else if (WIFEXITED(status)) {
+        return_value = WEXITSTATUS(status);
+      }
       // if the execution of the command has failed
       return return_value;
   }
@@ -224,7 +228,6 @@ static void read_cmd() {
           if (strcmp(cmd, "pwd") == 0) {
             previous_return_value = my_pwd(args_extanded+1, length);
           } else {
-          
             //execute external command with the new extanded array of args
             previous_return_value = extern_command(cmd,args_extanded);
             }
@@ -241,6 +244,7 @@ static void read_cmd() {
 int main(int argc, char const *argv[]) {
   rl_outstream = stderr;
   getcwd(current_rep, PATH_MAX);
+  treat_signal(true);
   read_cmd();
   return (0);
 }
