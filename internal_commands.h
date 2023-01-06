@@ -1,5 +1,5 @@
-#ifndef _INTERNALCOMMANDS_H_
-#define _INTERNALCOMMANDS_H_
+#ifndef INTERCOMMANDS_H
+#define INTERNAL_COMMANDS_H
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdlib.h>
