@@ -2,7 +2,7 @@
 #include <readline/readline.h>
 #include <sys/wait.h>
 #include <stdbool.h>
-
+#include <fcntl.h>
 #include "library/string.c"
 #include "internal_commands.h"
 #include "signal.h"
@@ -47,6 +47,97 @@ static int extern_command(char *cmd, char **args) {
       return return_value;
   }
 }
+
+
+int handle_redirection(char* cmd,char ** args, char* redirection ,char* filename){
+  int input_fd=0,output_fd=0;
+  int result;
+  if (strcmp(redirection,"<")==0) { //redirecting stdin of the command to the file filename 
+
+    input_fd= open(filename,O_RDONLY);
+    if (input_fd == -1){perror("opening file error"); return 1;}
+
+    result=dup2(input_fd,STDIN_FILENO);
+    if ( result == -1){perror("error redirecting stdin"); return 1;}
+
+    extern_command(cmd,args);
+    
+    close(input_fd);
+  
+  }else {
+    if (strcmp(redirection,">")==0 ){
+        output_fd = open(filename, O_WRONLY|O_CREAT|O_EXCL, 0644);
+        if (input_fd == -1){perror("opening file error"); return 1;}
+
+        result=dup2(output_fd,STDOUT_FILENO);
+        if ( result == -1){perror("error redirecting stdout"); return 1;}
+
+        extern_command(cmd,args);
+        
+        close(output_fd);
+    }else {
+      if (strcmp(redirection,">|")==0){
+
+        output_fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        if (input_fd == -1){perror("opening file error"); return 1;}
+
+        result=dup2(output_fd,STDOUT_FILENO);
+        if ( result == -1){perror("error redirecting stdout"); return 1;}
+
+        extern_command(cmd,args);
+        
+        close(output_fd);
+      }else {
+      
+        if (strcmp(redirection,">>")==0){
+
+          output_fd = open(filename, O_WRONLY|O_CREAT|O_APPEND, 0644);
+          if (input_fd == -1){perror("opening file error"); return 1;}
+
+          result=dup2(output_fd,STDOUT_FILENO);
+          if ( result == -1){perror("error redirecting stdout"); return 1;}
+
+          extern_command(cmd,args);
+            
+          close(output_fd);
+
+        }else{
+          if (strcmp(redirection,"2>")==0 || strcmp(redirection,"2>|")==0 || strcmp(redirection,"2>>")==0 ){
+            if (strcmp(redirection,"2>")==0) {
+
+              output_fd = open(filename, O_WRONLY|O_CREAT|O_EXCL, 0644);
+              
+            }else{
+
+              if(strcmp(redirection,"2>|")==0 ){
+
+                output_fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+
+              }else{
+
+                output_fd = open(filename, O_WRONLY|O_CREAT|O_APPEND, 0644);
+
+              }
+
+            }
+
+            if (output_fd == -1){perror("opening file error"); return 1;}
+            
+            result=dup2(output_fd,STDERR_FILENO);
+            if ( result == -1){perror("error redirecting stderr"); return 1;}
+
+            extern_command(cmd,args);
+            
+            close(output_fd);
+          
+          } else return 1;
+        }
+      } 
+    }
+  }
+  return 0;
+}
+
 
 /**
  * @brief Create an array with the command followed by list_arg
