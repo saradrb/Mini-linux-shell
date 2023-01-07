@@ -204,7 +204,6 @@ static void my_prompt() {
   }
 }
 
-
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
 static char **split_line(char *line, char **cmd, int *length,
@@ -236,7 +235,7 @@ static void read_cmd() {
   char *prompt_char = "$ ";
   int length = 0;
   char *cmd = " ";
-  int nb_parts=0;
+  int nb_parts = 0;
 
   while (1) {
     my_prompt();
@@ -255,82 +254,71 @@ static void read_cmd() {
       add_history(trimmed_line);
 
       // split the line
-      char **list_arg = split_line(trimmed_line, &cmd, &length, " ");
-        //test if there is an argument that contains a *
-            int size=0;
-            char** args_extanded=NULL;
-            int nb_cmds=0;
-            if(strstr(cmd,"*")){
-              char* expanded_path=malloc(sizeof(char)*PATH_MAX);
-              memset(expanded_path,0,sizeof(char)*PATH_MAX);
-              char**mypath=parse_path(cmd,&nb_parts,"/");
-              char ** new_cmd = malloc(sizeof(char*)*10);
-              expand_star(mypath,nb_parts,expanded_path,new_cmd,&nb_cmds);
-              free(mypath);
-              free(expanded_path);
-              
-              if(nb_cmds){
-                args_extanded=concat_tab(args_extanded,&size,new_cmd,nb_cmds);
-                cmd=args_extanded[0];
-                }
-              free(new_cmd);
-              
-              }
-              else{args_extanded=concat_elem(args_extanded,&size,cmd);}
-            
-            for (int i = 0; i < length; i++)
-            {
-              if(strstr(list_arg[i],"*")){
-                
-              //then expand the star and return an array with all the path options 
-                char* expanded_path=malloc(sizeof(char)*PATH_MAX);
-                memset(expanded_path,0,sizeof(char)*PATH_MAX);
+      char **list_arg = split_line(line, &cmd, &length, " ");
+      // test if there is an argument that contains a *
+      int size = 0;
+      char **args_extanded = NULL;
+      int nb_cmds = 0;
+      if (strstr(cmd, "*")) {
+        char *expanded_path = malloc(sizeof(char) * PATH_MAX);
+        memset(expanded_path, 0, sizeof(char) * PATH_MAX);
+        char **mypath = parse_path(cmd, &nb_parts, "/");
+        char **new_cmd = malloc(sizeof(char *) * 10);
+        expand_star(mypath, nb_parts, expanded_path, new_cmd, &nb_cmds);
+        free(mypath);
+        free(expanded_path);
 
-                char ** mypath=parse_path(list_arg[i],&nb_parts,"/");
-                int nb_options=0;
-                char** options=malloc(sizeof(char*)*PATH_MAX);
+        if (nb_cmds) {
+          args_extanded = concat_tab(args_extanded, &size, new_cmd, nb_cmds);
+          cmd = args_extanded[0];
+        }
+        free(new_cmd);
 
-                expand_star(mypath,nb_parts,expanded_path,options,&nb_options);
+      } else {
+        args_extanded = concat_elem(args_extanded, &size, cmd);
+      }
 
-                //concat final array to the argument array
-                args_extanded=concat_tab(args_extanded,&size,options,nb_options);
-                
-                
-                //free the allocated memory
-                free(options);
-                free(mypath);
-                free(expanded_path);
-              }else{
-                
-                args_extanded=concat_elem(args_extanded,&size,list_arg[i]);
-          
-              }
-            }//expanding the path
+      for (int i = 0; i < length; i++) {
+        if (strstr(list_arg[i], "*")) {
+          // then expand the star and return an array with all the path options
+          char *expanded_path = malloc(sizeof(char) * PATH_MAX);
+          memset(expanded_path, 0, sizeof(char) * PATH_MAX);
 
-      
+          char **mypath = parse_path(list_arg[i], &nb_parts, "/");
+          int nb_options = 0;
+          char **options = malloc(sizeof(char *) * PATH_MAX);
+
+          expand_star(mypath, nb_parts, expanded_path, options, &nb_options);
+
+          // concat final array to the argument array
+          args_extanded = concat_tab(args_extanded, &size, options, nb_options);
+
+          // free the allocated memory
+          free(options);
+          free(mypath);
+          free(expanded_path);
+        } else {
+          args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
+        }
+      }  // expanding the path
 
       // exec command
       if (strcmp(cmd, "exit") == 0) {
-        previous_return_value = my_exit(args_extanded+1, length);
+        previous_return_value = my_exit(args_extanded + 1, length);
+      } else if (strcmp(cmd, "cd") == 0) {
+        previous_return_value = my_cd(args_extanded + 1, length);
+      } else if (strcmp(cmd, "pwd") == 0) {
+        previous_return_value = my_pwd(args_extanded + 1, length);
       } else {
-        if (strcmp(cmd, "cd") == 0) {
-          previous_return_value = my_cd(args_extanded+1, length);
-        } else {
-          if (strcmp(cmd, "pwd") == 0) {
-            previous_return_value = my_pwd(args_extanded+1, length);
-          } else {
-            //execute external command with the new extanded array of args
-            previous_return_value = extern_command(cmd,args_extanded);
-            }
-          }
-          }
-          free_struct(args_extanded,size);
-          free(list_arg);
-        }
-      free(line);
-      free(trimmed_line);
-    } 
- }
+        // execute external command with the new extanded array of args
+        previous_return_value = extern_command(cmd, args_extanded);
+      }
+      free_struct(args_extanded, size);
+      free(list_arg);
+    }
+    free(line);
+  }
+}
 
 int main(int argc, char const *argv[]) {
   rl_outstream = stderr;
