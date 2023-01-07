@@ -1,10 +1,11 @@
+#include <fcntl.h>
 #include <readline/history.h>
 #include <readline/readline.h>
-#include <sys/wait.h>
 #include <stdbool.h>
-#include <fcntl.h>
-#include "library/string.c"
+#include <sys/wait.h>
+
 #include "internal_commands.h"
+#include "library/string.c"
 #include "signal.h"
 
 extern char previous_rep[PATH_MAX];
@@ -48,96 +49,120 @@ static int extern_command(char *cmd, char **args) {
   }
 }
 
-
-int handle_redirection(char* cmd,char ** args, char* redirection ,char* filename){
-  int input_fd=0,output_fd=0;
+int handle_redirection(char *cmd, char **args, char *redirection,
+                       char *filename) {
+  int input_fd = 0, output_fd = 0;
   int result;
-  if (strcmp(redirection,"<")==0) { //redirecting stdin of the command to the file filename 
+  if (strcmp(redirection, "<") ==
+      0) {  // redirecting stdin of the command to the file filename
 
-    input_fd= open(filename,O_RDONLY);
-    if (input_fd == -1){perror("opening file error"); return 1;}
+    input_fd = open(filename, O_RDONLY);
+    if (input_fd == -1) {
+      perror("opening file error");
+      return 1;
+    }
 
-    result=dup2(input_fd,STDIN_FILENO);
-    if ( result == -1){perror("error redirecting stdin"); return 1;}
+    result = dup2(input_fd, STDIN_FILENO);
+    if (result == -1) {
+      perror("error redirecting stdin");
+      return 1;
+    }
 
-    extern_command(cmd,args);
-    
+    extern_command(cmd, args);
+
     close(input_fd);
-  
-  }else {
-    if (strcmp(redirection,">")==0 ){
-        output_fd = open(filename, O_WRONLY|O_CREAT|O_EXCL, 0644);
-        if (input_fd == -1){perror("opening file error"); return 1;}
 
-        result=dup2(output_fd,STDOUT_FILENO);
-        if ( result == -1){perror("error redirecting stdout"); return 1;}
+  } else {
+    if (strcmp(redirection, ">") == 0) {
+      output_fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0644);
+      if (input_fd == -1) {
+        perror("opening file error");
+        return 1;
+      }
 
-        extern_command(cmd,args);
-        
+      result = dup2(output_fd, STDOUT_FILENO);
+      if (result == -1) {
+        perror("error redirecting stdout");
+        return 1;
+      }
+
+      extern_command(cmd, args);
+
+      close(output_fd);
+    } else {
+      if (strcmp(redirection, ">|") == 0) {
+        output_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (input_fd == -1) {
+          perror("opening file error");
+          return 1;
+        }
+
+        result = dup2(output_fd, STDOUT_FILENO);
+        if (result == -1) {
+          perror("error redirecting stdout");
+          return 1;
+        }
+
+        extern_command(cmd, args);
+
         close(output_fd);
-    }else {
-      if (strcmp(redirection,">|")==0){
+      } else {
+        if (strcmp(redirection, ">>") == 0) {
+          output_fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
+          if (input_fd == -1) {
+            perror("opening file error");
+            return 1;
+          }
 
-        output_fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-        if (input_fd == -1){perror("opening file error"); return 1;}
+          result = dup2(output_fd, STDOUT_FILENO);
+          if (result == -1) {
+            perror("error redirecting stdout");
+            return 1;
+          }
 
-        result=dup2(output_fd,STDOUT_FILENO);
-        if ( result == -1){perror("error redirecting stdout"); return 1;}
+          extern_command(cmd, args);
 
-        extern_command(cmd,args);
-        
-        close(output_fd);
-      }else {
-      
-        if (strcmp(redirection,">>")==0){
-
-          output_fd = open(filename, O_WRONLY|O_CREAT|O_APPEND, 0644);
-          if (input_fd == -1){perror("opening file error"); return 1;}
-
-          result=dup2(output_fd,STDOUT_FILENO);
-          if ( result == -1){perror("error redirecting stdout"); return 1;}
-
-          extern_command(cmd,args);
-            
           close(output_fd);
 
-        }else{
-          if (strcmp(redirection,"2>")==0 || strcmp(redirection,"2>|")==0 || strcmp(redirection,"2>>")==0 ){
-            if (strcmp(redirection,"2>")==0) {
+        } else {
+          if (strcmp(redirection, "2>") == 0 ||
+              strcmp(redirection, "2>|") == 0 ||
+              strcmp(redirection, "2>>") == 0) {
+            if (strcmp(redirection, "2>") == 0) {
+              output_fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0644);
 
-              output_fd = open(filename, O_WRONLY|O_CREAT|O_EXCL, 0644);
-              
-            }else{
+            } else {
+              if (strcmp(redirection, "2>|") == 0) {
+                output_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
-              if(strcmp(redirection,"2>|")==0 ){
-
-                output_fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-
-              }else{
-
-                output_fd = open(filename, O_WRONLY|O_CREAT|O_APPEND, 0644);
-
+              } else {
+                output_fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
               }
-
             }
 
-            if (output_fd == -1){perror("opening file error"); return 1;}
-            
-            result=dup2(output_fd,STDERR_FILENO);
-            if ( result == -1){perror("error redirecting stderr"); return 1;}
+            if (output_fd == -1) {
+              perror("opening file error");
+              return 1;
+            }
 
-            extern_command(cmd,args);
-            
+            result = dup2(output_fd, STDERR_FILENO);
+            if (result == -1) {
+              perror("error redirecting stderr");
+              return 1;
+            }
+
+            extern_command(cmd, args);
+
             close(output_fd);
-          
-          } else return 1;
+
+          } else
+            return 1;
         }
-      } 
+      }
     }
   }
   return 0;
 }
-
 
 /**
  * @brief Create an array with the command followed by list_arg
@@ -168,8 +193,10 @@ int handle_redirection(char* cmd,char ** args, char* redirection ,char* filename
 static void my_prompt() {
   // convert the previous return value into a char[]
   char nbr[6] = {'\0'};
-  if (previous_return_value == 255) strncpy(nbr, "SIG", 4);
-  else sprintf(nbr, "%d", previous_return_value);
+  if (previous_return_value == 255)
+    strncpy(nbr, "SIG", 4);
+  else
+    sprintf(nbr, "%d", previous_return_value);
 
   char res[50] = {'\0'};
   // complete res with green if the last return value is 0, and with red
@@ -317,6 +344,7 @@ static void read_cmd() {
       free(list_arg);
     }
     free(line);
+    free(trimmed_line);
   }
 }
 
