@@ -31,6 +31,7 @@ int extern_command(char *cmd, char **args) {
         return_value = 255;
       } else if (WIFEXITED(status)) {
         return_value = WEXITSTATUS(status);
+
       }
       // if the execution of the command has failed
       return return_value;

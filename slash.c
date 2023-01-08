@@ -16,6 +16,8 @@ extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
 extern int previous_return_value;
 
+
+
 /**
  * @brief Print prompt with color, containing the return value of the last
  * executed command and the path where we are
@@ -60,6 +62,52 @@ static void my_prompt() {
     return;
   }
 }
+
+
+
+//execute cmd with a redirection
+int cmd_with_redirection(char* cmd, char** args,int length, int pos_redirection){
+  int* fd_default;
+  int return_value=0;
+  int status = 0;
+  pid_t pd = fork();
+  switch(pd){
+
+    case -1 : 
+      write(STDOUT_FILENO, "Error fork\n", 12);
+      return 1;
+    case 0 : // if we are in exec the rederection and the command and return the return_value of the command
+
+       fd_default =  handle_redirection(args[pos_redirection],args[pos_redirection+1]);
+       args[pos_redirection]=NULL;
+       if (strcmp(cmd, "exit") == 0) {
+            return_value= my_exit(args + 1, length-1);
+        } else {
+        if (strcmp(cmd, "cd") == 0) {
+          return_value= my_cd(args + 1, length-1);
+        } else {
+          if (strcmp(cmd, "pwd") == 0) {
+             return_value= my_pwd(args + 1, length-1);
+          } else {
+            // execute external command with the new extanded array of args
+             return_value= extern_command(cmd, args);
+          }
+        }
+      }
+      go_back_to_standard(fd_default);
+      free_struct(args,length);
+      return return_value;
+
+    default:// if we are in the father thread wait the son finishes executing the command the get the return value
+     // wait for the end of child process and take his exit value
+      waitpid(pd, &status, 0);
+      return_value= WEXITSTATUS(status);
+      return return_value;
+
+  }//switch 
+}
+
+
 
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
@@ -176,31 +224,26 @@ static void read_cmd() {
 
       // exec command
 
-      // handle redirectiion if any
-      int *fd_default;
+      // handle redirection if any 
       int pos_redirection = contains_valid_redirection(args_extanded, size);
-      if (pos_redirection > 0) {  // if it contains a valid redirection
-        fd_default = handle_redirection(args_extanded[pos_redirection],
-                                        args_extanded[pos_redirection + 1]);
-        args_extanded[pos_redirection] = NULL;
-      }
+      if(pos_redirection>0){ 
+         previous_return_value = cmd_with_redirection(cmd,args_extanded,size-2,pos_redirection);
+      }else {
 
-      if (strcmp(cmd, "exit") == 0) {
-        previous_return_value = my_exit(args_extanded + 1, length);
-      } else {
-        if (strcmp(cmd, "cd") == 0) {
-          previous_return_value = my_cd(args_extanded + 1, length);
+        if (strcmp(cmd, "exit") == 0){ 
+          previous_return_value = my_exit(args_extanded + 1, length);
         } else {
-          if (strcmp(cmd, "pwd") == 0) {
-            previous_return_value = my_pwd(args_extanded + 1, length);
+          if (strcmp(cmd, "cd") == 0) {
+            previous_return_value = my_cd(args_extanded + 1, length);
           } else {
-            // execute external command with the new extanded array of args
-            previous_return_value = extern_command(cmd, args_extanded);
+            if (strcmp(cmd, "pwd") == 0) {
+              previous_return_value = my_pwd(args_extanded + 1, length);
+            } else {
+              // execute external command with the new extanded array of args
+              previous_return_value = extern_command(cmd, args_extanded);
+            }
           }
         }
-      }
-      if (pos_redirection > 0) {
-        go_back_to_standard(fd_default);
       }
       free_struct(args_extanded, size);
       free(list_arg);

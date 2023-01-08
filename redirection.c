@@ -138,6 +138,8 @@ int* handle_redirection(char* redirection, char* filename) {
   return fd_standard;
 }
 
+
+
 // go back to standard descriptors for stdin stdout and stderr, after a
 // redirection
 void go_back_to_standard(int* fd_std) {
@@ -150,3 +152,4 @@ void go_back_to_standard(int* fd_std) {
   dup2(fd_std[3], STDERR_FILENO);
   close(fd_std[2]);
 }
+
