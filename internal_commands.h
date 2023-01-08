@@ -60,4 +60,13 @@ char** concat_elem(char** tab1, int* size, char* elem);
 // concatenate to tab2 to tab1
 char** concat_tab(char** tab1, int* size, char** tab2, int size2);
 
+int prefix(char *string, char *str, char *new_str);
+
+int suffix(char *string, char *str, char *new_str) ;
+
+// expand the ** joker, it take the path after the ** and search for it in the current repo tree 
+char** expand_double_star(char** path,int length,char* current_repo,char** path_options,int* nb_op);
+
+
+
 #endif

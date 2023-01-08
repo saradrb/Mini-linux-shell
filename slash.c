@@ -49,118 +49,129 @@ static int extern_command(char *cmd, char **args) {
   }
 }
 
-int handle_redirection(char *cmd, char **args, char *redirection,
-                       char *filename) {
-  int input_fd = 0, output_fd = 0;
+/**
+ * @brief check if the arg list contains a valid redirection (redirection symbol and a filename destination)
+ *
+ * @param args_extanded argument array
+ * @param size size of the array , number of args 
+ * @return return the position of the redirection symbol in array if finded
+ * returns -1 if the redirection is invalid 
+ * returns -2 if there is no redirection 
+ */
+
+int contains_valid_redirection(char** args_extanded,int size){
+
+  for(int i=0; i<size; i++){
+    if(strcmp(args_extanded[i],">")== 0 ||
+      strcmp(args_extanded[i],"<")== 0 ||
+      strcmp(args_extanded[i],">>")== 0 ||
+      strcmp(args_extanded[i],">|")== 0 ||
+      strcmp(args_extanded[i],"2>")== 0 ||
+      strcmp(args_extanded[i],"2>>")== 0 ||
+      strcmp(args_extanded[i],"2>|")== 0 ||
+      strcmp(args_extanded[i],"2>")== 0 ){
+        if (i<size-1 && i>0) return i; // redirection symbol position 
+        else return -1; // means invalid redirection 
+      }
+  }
+  return -2; //means no redirection
+}
+
+/**
+ * @brief handle a command redirection
+ *
+ * @param redirection string that contains the redirection sign
+ * @param filename the name of the destination file 
+ * @return return an array that contains the default descriptors of stdin dtdout and stderr
+ * 
+ */
+int * handle_redirection(char* redirection ,char* filename){
+  int fd=0; 
+  static int fd_standard[3];
+  fd_standard[0]=dup(STDIN_FILENO);
+  fd_standard[1]=dup(STDOUT_FILENO);
+  fd_standard[2]=dup(STDERR_FILENO); 
   int result;
-  // redirecting stdin of the command to the file filename
-  if (strcmp(redirection, "<") == 0) {
-    input_fd = open(filename, O_RDONLY);
-    if (input_fd == -1) {
-      perror("opening file error");
-      return 1;
-    }
+  if (strcmp(redirection,"<")==0) { //redirecting stdin of the command to the file filename 
 
-    result = dup2(input_fd, STDIN_FILENO);
-    if (result == -1) {
-      perror("error redirecting stdin");
-      return 1;
-    }
+    fd= open(filename,O_RDONLY);
+    if (fd == -1){perror("opening file error"); return NULL;}
 
-    extern_command(cmd, args);
+    result=dup2(fd,STDIN_FILENO);
+    if ( result == -1){perror("error redirecting stdin"); return NULL;}
+    close(fd);
+  }else {
+    if (strcmp(redirection,">")==0 ){
+        fd = open(filename, O_WRONLY|O_CREAT|O_EXCL, 0644);
+        if (fd == -1){perror("opening file error"); return NULL;}
 
-    close(input_fd);
+        result=dup2(fd,STDOUT_FILENO);
+        if ( result == -1){perror("error redirecting stdout"); return NULL;}
+        close(fd);
 
-  } else {
-    if (strcmp(redirection, ">") == 0) {
-      output_fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0644);
-      if (input_fd == -1) {
-        perror("opening file error");
-        return 1;
-      }
+    }else {
+      if (strcmp(redirection,">|")==0){
 
-      result = dup2(output_fd, STDOUT_FILENO);
-      if (result == -1) {
-        perror("error redirecting stdout");
-        return 1;
-      }
+        fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        if (fd == -1){perror("opening file error"); return NULL;}
 
-      extern_command(cmd, args);
+        result=dup2(fd,STDOUT_FILENO);
+        if ( result == -1){perror("error redirecting stdout"); return NULL;}
+        close(fd);
 
-      close(output_fd);
-    } else {
-      if (strcmp(redirection, ">|") == 0) {
-        output_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (input_fd == -1) {
-          perror("opening file error");
-          return 1;
-        }
+      }else {
+      
+        if (strcmp(redirection,">>")==0){
 
-        result = dup2(output_fd, STDOUT_FILENO);
-        if (result == -1) {
-          perror("error redirecting stdout");
-          return 1;
-        }
+          fd = open(filename, O_WRONLY|O_CREAT|O_APPEND, 0644);
+          if (fd == -1){perror("opening file error"); return NULL;}
 
-        extern_command(cmd, args);
+          result=dup2(fd,STDOUT_FILENO);
+          if ( result == -1){perror("error redirecting stdout"); return NULL;}
+          close(fd);
 
-        close(output_fd);
-      } else {
-        if (strcmp(redirection, ">>") == 0) {
-          output_fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
-          if (input_fd == -1) {
-            perror("opening file error");
-            return 1;
-          }
+        }else{
+          if (strcmp(redirection,"2>")==0 || strcmp(redirection,"2>|")==0 || strcmp(redirection,"2>>")==0 ){
+            if (strcmp(redirection,"2>")==0) {
 
-          result = dup2(output_fd, STDOUT_FILENO);
-          if (result == -1) {
-            perror("error redirecting stdout");
-            return 1;
-          }
+              fd = open(filename, O_WRONLY|O_CREAT|O_EXCL, 0644);
+              
+            }else{
 
-          extern_command(cmd, args);
+              if(strcmp(redirection,"2>|")==0 ){
 
-          close(output_fd);
+                fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 
-        } else {
-          if (strcmp(redirection, "2>") == 0 ||
-              strcmp(redirection, "2>|") == 0 ||
-              strcmp(redirection, "2>>") == 0) {
-            if (strcmp(redirection, "2>") == 0) {
-              output_fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0644);
+              }else{
 
-            } else {
-              if (strcmp(redirection, "2>|") == 0) {
-                output_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                fd = open(filename, O_WRONLY|O_CREAT|O_APPEND, 0644);
 
-              } else {
-                output_fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
               }
+
             }
 
-            if (output_fd == -1) {
-              perror("opening file error");
-              return 1;
-            }
-
-            result = dup2(output_fd, STDERR_FILENO);
-            if (result == -1) {
-              perror("error redirecting stderr");
-              return 1;
-            }
-
-            extern_command(cmd, args);
-
-            close(output_fd);
-
-          } else
-            return 1;
+            if (fd == -1){perror("opening file error"); return NULL;}
+            
+            result=dup2(fd,STDERR_FILENO);
+            if ( result == -1){perror("error redirecting stderr"); return NULL;}
+            close(fd);
+          } else return NULL;
         }
-      }
+      } 
     }
   }
-  return 0;
+  return fd_standard;
+}
+
+
+//go back to standard descriptors for stdin stdout and stderr, after a redirection 
+void go_back_to_standard(int * fd_std){
+  dup2(fd_std[0],STDIN_FILENO);
+  close(fd_std[0]);
+  dup2(fd_std[1],STDOUT_FILENO);
+  close(fd_std[1]);
+  dup2(fd_std[3],STDERR_FILENO);
+  close(fd_std[2]);
 }
 
 /**
@@ -280,72 +291,107 @@ static void read_cmd() {
       add_history(trimmed_line);
 
       // split the line
-      char **list_arg = split_line(line, &cmd, &length, " ");
-      // test if there is an argument that contains a *
-      int size = 0;
-      char **args_extanded = NULL;
-      int nb_cmds = 0;
-      if (strstr(cmd, "*")) {
-        char *expanded_path = malloc(sizeof(char) * PATH_MAX);
-        memset(expanded_path, 0, sizeof(char) * PATH_MAX);
-        char **mypath = parse_path(cmd, &nb_parts, "/");
-        char **new_cmd = malloc(sizeof(char *) * 10);
-        expand_star(mypath, nb_parts, expanded_path, new_cmd, &nb_cmds);
-        free(mypath);
-        free(expanded_path);
+      char **list_arg = split_line(trimmed_line, &cmd, &length, " ");
 
-        if (nb_cmds) {
-          args_extanded = concat_tab(args_extanded, &size, new_cmd, nb_cmds);
-          cmd = args_extanded[0];
-        }
-        free(new_cmd);
+        //test if there is an argument that contains a wildcard (* or **)
+            int size=0;
+            char** args_extanded=NULL;
+            int nb_cmds=0;
+            if(strstr(cmd,"*")){
+              char* expanded_path=malloc(sizeof(char)*PATH_MAX);
+              memset(expanded_path,0,sizeof(char)*PATH_MAX);
+              char**mypath = parse_path(cmd,&nb_parts,"/");
+              char ** new_cmd = malloc(sizeof(char*)*10);
+              expand_star(mypath,nb_parts,expanded_path,new_cmd,&nb_cmds);
+              free(mypath);
+              free(expanded_path);
+              
+              if(nb_cmds){
+                args_extanded=concat_tab(args_extanded,&size,new_cmd,nb_cmds);
+                cmd=args_extanded[0];
+                }
+              free(new_cmd);
+              
+              }
+              else{args_extanded=concat_elem(args_extanded,&size,cmd);}
+            
+            for (int i = 0; i < length; i++)
+            {
+              
+              if(prefix("**",list_arg[i],NULL)){
+                
+                char ** mypath=parse_path(list_arg[i],&nb_parts,"/");
+                args_extanded=expand_double_star(mypath+1,nb_parts-1,"",args_extanded,&size);
+                  
+                if(size==0){args_extanded=concat_elem(args_extanded,&size,list_arg[i]);}
+                free(mypath);
+                
+              }
+              else {
+                if(strstr(list_arg[i],"*") && !strstr(list_arg[i],"**")){
+                  
+                //then expand the star and return an array with all the path options 
+                  char* expanded_path=malloc(sizeof(char)*PATH_MAX);
+                  memset(expanded_path,0,sizeof(char)*PATH_MAX);
 
-      } else {
-        args_extanded = concat_elem(args_extanded, &size, cmd);
-      }
+                  char ** mypath=parse_path(list_arg[i],&nb_parts,"/");
+                  int nb_options=0;
+                  char** options=malloc(sizeof(char*)*PATH_MAX);
 
-      for (int i = 0; i < length; i++) {
-        if (strstr(list_arg[i], "*")) {
-          // then expand the star and return an array with all the path options
-          char *expanded_path = malloc(sizeof(char) * PATH_MAX);
-          memset(expanded_path, 0, sizeof(char) * PATH_MAX);
+                  expand_star(mypath,nb_parts,expanded_path,options,&nb_options);
 
-          char **mypath = parse_path(list_arg[i], &nb_parts, "/");
-          int nb_options = 0;
-          char **options = malloc(sizeof(char *) * PATH_MAX);
-
-          expand_star(mypath, nb_parts, expanded_path, options, &nb_options);
-
-          // concat final array to the argument array
-          args_extanded = concat_tab(args_extanded, &size, options, nb_options);
-
-          // free the allocated memory
-          free(options);
-          free(mypath);
-          free(expanded_path);
-        } else {
-          args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
-        }
-      }  // expanding the path
+                  //concat final array to the argument array
+                  args_extanded=concat_tab(args_extanded,&size,options,nb_options);
+                  
+                  
+                  //free the allocated memory
+                  free(options);
+                  free(mypath);
+                  free(expanded_path);
+                }else{
+                  
+                  args_extanded=concat_elem(args_extanded,&size,list_arg[i]);
+            
+                }
+              }
+            }//expanding the path
 
       // exec command
-      if (strcmp(cmd, "exit") == 0) {
-        previous_return_value = my_exit(args_extanded + 1, length);
-      } else if (strcmp(cmd, "cd") == 0) {
-        previous_return_value = my_cd(args_extanded + 1, length);
-      } else if (strcmp(cmd, "pwd") == 0) {
-        previous_return_value = my_pwd(args_extanded + 1, length);
-      } else {
-        // execute external command with the new extanded array of args
-        previous_return_value = extern_command(cmd, args_extanded);
+
+      //handle redirectiion if any 
+      int * fd_default;
+      int pos_redirection = contains_valid_redirection(args_extanded,size);
+      if (pos_redirection > 0){ //if it contains a valid redirection
+        fd_default = handle_redirection(args_extanded[pos_redirection],args_extanded[pos_redirection+1]);
+        args_extanded[pos_redirection]=NULL;
+        
       }
-      free_struct(args_extanded, size);
-      free(list_arg);
-    }
-    free(line);
-    free(trimmed_line);
-  }
-}
+      
+        if (strcmp(cmd, "exit") == 0) {
+          previous_return_value = my_exit(args_extanded+1,length);
+        } else {
+          if (strcmp(cmd, "cd") == 0) {
+            previous_return_value = my_cd(args_extanded+1, length);
+          } else {
+            if (strcmp(cmd, "pwd") == 0) {
+              previous_return_value = my_pwd(args_extanded+1, length);
+            } else {
+              //execute external command with the new extanded array of args
+              previous_return_value = extern_command(cmd,args_extanded);
+              
+              }
+            }
+            }
+          if(pos_redirection > 0) { go_back_to_standard(fd_default);}
+          free_struct(args_extanded,size);
+          free(list_arg);
+        }
+      free(line);
+      free(trimmed_line);
+      
+    } 
+ }
+
 
 int main(int argc, char const *argv[]) {
   rl_outstream = stderr;
