@@ -16,8 +16,6 @@ extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
 extern int previous_return_value;
 
-
-
 /**
  * @brief Print prompt with color, containing the return value of the last
  * executed command and the path where we are
@@ -63,42 +61,41 @@ static void my_prompt() {
   }
 }
 
-
-
-//execute cmd with a redirection
-int cmd_with_redirection(char* cmd, char** args,int length, int pos_redirection){
+// execute cmd with a redirection
+int cmd_with_redirection(char *cmd, char **args, int length,
+                         int pos_redirection) {
   static int fd_standard[3];
   fd_standard[0] = dup(STDIN_FILENO);
   fd_standard[1] = dup(STDOUT_FILENO);
   fd_standard[2] = dup(STDERR_FILENO);
-  int return_value=0;
-  handle_rd:
-    length=length-2;
-    return_value =  handle_redirection(args[length],args[length+1]);
-    args[length]=NULL;
-    
-  if (return_value==0){ 
-       if (contains_valid_redirection(args,length)>0){goto handle_rd;}
-       if (strcmp(cmd, "exit") == 0) {
-            return_value= my_exit(args + 1, length-1);
+  int return_value = 0;
+handle_rd:
+  length = length - 2;
+  return_value = handle_redirection(args[length], args[length + 1]);
+  args[length] = NULL;
+
+  if (return_value == 0) {
+    if (contains_valid_redirection(args, length) > 0) {
+      goto handle_rd;
+    }
+    if (strcmp(cmd, "exit") == 0) {
+      return_value = my_exit(args + 1, length - 1);
+    } else {
+      if (strcmp(cmd, "cd") == 0) {
+        return_value = my_cd(args + 1, length - 1);
+      } else {
+        if (strcmp(cmd, "pwd") == 0) {
+          return_value = my_pwd(args + 1, length - 1);
         } else {
-        if (strcmp(cmd, "cd") == 0) {
-          return_value= my_cd(args + 1, length-1);
-        } else {
-          if (strcmp(cmd, "pwd") == 0) {
-             return_value= my_pwd(args + 1, length-1);
-          } else {
-            // execute external command with the new extanded array of args
-             return_value= extern_command(cmd, args);
-          }
+          // execute external command with the new extanded array of args
+          return_value = extern_command(cmd, args);
         }
       }
+    }
   }
   go_back_to_standard(fd_standard);
-  return(return_value);
+  return (return_value);
 }
-
-
 
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
@@ -215,13 +212,22 @@ static void read_cmd() {
 
       // exec command
 
-      // handle redirection if any 
+      // handle redirection if any
       int pos_redirection = contains_valid_redirection(args_extanded, size);
-      if(pos_redirection>0){ 
-         previous_return_value = cmd_with_redirection(cmd,args_extanded,size,pos_redirection);
-      }else {
-
-        if (strcmp(cmd, "exit") == 0){ 
+      // // // int nbr_of_pipes = nbr_pipe(args_extanded);
+      // // // if (nbr_of_pipes > 0) {
+      // // //   char ***pipeline = split_cmd_to_pipeline(args_extanded, nbr_of_pipes);
+      // // //   if (pipeline == NULL) {
+      // // //     perror("error");
+      // // //   }
+      // // //   int n = exec_pipeline(pipeline);
+      // // //   previous_return_value = n;
+      // // // } else 
+      if (pos_redirection > 0) {
+        previous_return_value =
+            cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
+      } else {
+        if (strcmp(cmd, "exit") == 0) {
           previous_return_value = my_exit(args_extanded + 1, length);
         } else {
           if (strcmp(cmd, "cd") == 0) {

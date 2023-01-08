@@ -25,6 +25,7 @@ void test_mini_tab(char **tab) {
   for (int i = 0; tab[i] != NULL; i++) {
     char *tmp = tab[i];
     char aaa = 'a';
+    // write(1, tmp, strlen(tmp));
   }
 }
 
@@ -66,6 +67,7 @@ void free_triple_tab(char ***tableau, int sure) {
  * @return int
  */
 int exec_adapted_cmd(char **cmd, int length) {
+  test_mini_tab(cmd);
   // compare all possible commands
   if (strcmp(cmd[0], "exit") == 0) {
     return my_exit(cmd + 1, length - 1);
@@ -94,36 +96,58 @@ int exec_cmd(int fd_read[], int fd_write[], char **cmd) {
   for (int i = 0; cmd[i] != NULL; i++) {
     length = length + 1;
   }
+  int previous_return_value = -1;
+
   // regarde si il y a bien un descripteur à lire (si ce n'est pas la première
   // commande)
   if (fd_read[0] != -1) {
-    char *buf = initialiser_string(PIPE_BUF);
-    if (read(fd_read[0], buf, PIPE_BUF) == -1) {
-      if (close_bis(fd_read[0]) == -2 ||
-          (fd_write[1] != -1 && close_bis(fd_write[1]) == -2))
+    if (fd_write[1] != -1) {
+      if (dup2(fd_write[1], STDOUT_FILENO) == -1) return -2;
+      if (dup2(fd_read[0], STDIN_FILENO) == -1) return -2;
+      previous_return_value = exec_adapted_cmd(cmd, length);
+      if (dup2(STDIN_FILENO, fd_read[0]) == -1) return -2;
+      if (dup2(STDOUT_FILENO, fd_write[1]) == -1) return -2;
+      if (close(fd_write[1]) == -2) {
+        close(fd_read[0]);
         return -2;
-      return -1;
+      }
+    } else {
+      // char *buf = initialiser_string(PIPE_BUF);
+      // read(fd_read[0], buf, PIPE_BUF);
+      // cmd = realloc(cmd, 4 * sizeof(char *));
+      if (dup2(fd_read[0], STDIN_FILENO) == -1) return -2;
+      previous_return_value = extern_command(cmd[0], cmd);
+      // previous_return_value = exec_adapted_cmd(cmd, length);
+      if (dup2(STDIN_FILENO, fd_read[0]) == -1) return -2;
     }
     if (close_bis(fd_read[0]) == -2) return -2;
-    test_mini_tab(cmd);
-    cmd = realloc(cmd, sizeof(char *) * (length + 2));
-    if (cmd == NULL) return -2;
-    cmd[length] = buf;
-    cmd[length + 1] = NULL;
-    length = length + 1;
-    test_mini_tab(cmd);
+    return previous_return_value;
+
+    // char *buf = initialiser_string(PIPE_BUF);
+    // if (read(fd_read[0], buf, PIPE_BUF) == -1) {
+    //   if (close_bis(fd_read[0]) == -2 ||
+    //       (fd_write[1] != -1 && close_bis(fd_write[1]) == -2))
+    //     return -2;
+    //   return -1;
+    // }
+    // if (close_bis(fd_read[0]) == -2) return -2;
+    // test_mini_tab(cmd);
+    // cmd = realloc(cmd, sizeof(char *) * (length + 2));
+    // if (cmd == NULL) return -2;
+    // cmd[length] = buf;
+    // cmd[length + 1] = NULL;
+    // length = length + 1;
+    // test_mini_tab(cmd);
   }
-  int previous_return_value = -1;
   if (fd_write[1] != -1) {
     if (dup2(fd_write[1], STDOUT_FILENO) == -1) {
-      // close_bis(fd_write[1]);
       return -2;
     }
     previous_return_value = exec_adapted_cmd(cmd, length);
     if (dup2(STDOUT_FILENO, fd_write[1]) == -1) {
       return -2;
     }
-    if (close_bis(fd_write[1]) == -2) return -2;
+    if (close(fd_write[1]) == -2) return -2;
   } else {
     test_mini_tab(cmd);
     previous_return_value = exec_adapted_cmd(cmd, length);
@@ -228,20 +252,20 @@ int exec_pipeline(char ***tab) {
   int previous_return_value =
       exec_first_last_command(0, pipes[0], fake_pipe, tab[0]);
   if (previous_return_value != 0) {
-    close_bis(pipes[0][1]);
+    close(pipes[0][1]);
     for (int i = 0; i < length - 1; i++) {
-      close_bis(pipes[i][1]);
-      close_bis(pipes[i][0]);
+      close(pipes[i][1]);
+      close(pipes[i][0]);
     }
     return previous_return_value;
   }
   for (int i = 1; i < length - 1; i++) {
     previous_return_value = exec_cmd(pipes[i - 1], pipes[i], tab[i]);
     if (previous_return_value != 0) {
-      close_bis(pipes[i][0]);
+      close(pipes[i][0]);
       for (int j = i + 1; j < length - 1; j++) {
-        close_bis(pipes[j][1]);
-        close_bis(pipes[j][0]);
+        close(pipes[j][1]);
+        close(pipes[j][0]);
       }
       return previous_return_value;
     }

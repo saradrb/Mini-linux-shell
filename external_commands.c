@@ -13,6 +13,11 @@ int extern_command(char *cmd, char **args) {
   int return_value = 0;
   // Create child process
   pid_t pid_fork = fork();
+  if (pid_fork < 0) {
+    write(STDOUT_FILENO, "Error fork\n", 12);
+    return 1;
+  }
+
   switch (pid_fork) {
     // If the fork has failed
     case -1:
@@ -31,7 +36,6 @@ int extern_command(char *cmd, char **args) {
         return_value = 255;
       } else if (WIFEXITED(status)) {
         return_value = WEXITSTATUS(status);
-
       }
       // if the execution of the command has failed
       return return_value;
