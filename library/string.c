@@ -3,6 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Tests if the given string contains only whitespace
+ * 
+ * @param string a string
+ * @return true the given string contains only whitespace
+ * @return false the given string contains other characters
+ */
 static bool only_whitespace(const char* string) {
   for (int i = 0; i < strlen(string); i++) {
     if (string[i] != ' ') return false;
@@ -10,6 +17,12 @@ static bool only_whitespace(const char* string) {
   return true;
 }
 
+/**
+ * @brief Return a trimmed version of the given string
+ * 
+ * @param string a string
+ * @return char* an allocated trimmed version
+ */
 char* trim(const char* string) {
   if (string == NULL) return NULL;
 
