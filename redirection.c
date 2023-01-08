@@ -53,7 +53,7 @@ int handle_redirection(char* redirection, char* filename) {
     close(fd);
   } else {
     if (strcmp(redirection, ">") == 0) {
-      fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 066);
+      fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0666);
       if (fd == -1) {
         perror("opening file error");
         return 1;
