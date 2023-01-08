@@ -11,19 +11,18 @@
  * returns -2 if there is no redirection
  */
 int contains_valid_redirection(char** args_extanded, int size) {
-  for (int i = 0; i < size; i++) {
-    char* string = args_extanded[i];
-    if (strcmp(string, ">") == 0 || strcmp(string, "<") == 0 ||
-        strcmp(string, ">>") == 0 || strcmp(string, ">|") == 0 ||
-        strcmp(string, "2>") == 0 || strcmp(string, "2>>") == 0 ||
-        strcmp(string, "2>|") == 0 || strcmp(string, "2>") == 0) {
-      if (i < size - 1 && i > 0)
-        return i;  // redirection symbol position
-      else
-        return -1;  // means invalid redirection
+
+    if (size-2 > 0){
+      char* string = args_extanded[size-2];
+      if (strcmp(string, ">") == 0 || strcmp(string, "<") == 0 ||
+          strcmp(string, ">>") == 0 || strcmp(string, ">|") == 0 ||
+          strcmp(string, "2>") == 0 || strcmp(string, "2>>") == 0 ||
+          strcmp(string, "2>|") == 0 || strcmp(string, "2>") == 0) {
+          return (size-2);
+        }  // redirection symbol position
     }
-  }
-  return -2;  // means no redirection
+  
+  return -1;  // means no redirection
 }
 
 /**
@@ -38,8 +37,7 @@ int contains_valid_redirection(char** args_extanded, int size) {
 int handle_redirection(char* redirection, char* filename) {
   int fd = 0;
   int result;
-  if (strcmp(redirection, "<") ==
-      0) {  // redirecting stdin of the command to the file filename
+  if (strcmp(redirection, "<") ==0) {  // redirecting stdin of the command to the file filename
 
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
@@ -55,7 +53,7 @@ int handle_redirection(char* redirection, char* filename) {
     close(fd);
   } else {
     if (strcmp(redirection, ">") == 0) {
-      fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0644);
+      fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 066);
       if (fd == -1) {
         perror("opening file error");
         return 1;
@@ -70,7 +68,7 @@ int handle_redirection(char* redirection, char* filename) {
 
     } else {
       if (strcmp(redirection, ">|") == 0) {
-        fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
         if (fd == -1) {
           perror("opening file error");
           return 1;
@@ -103,7 +101,7 @@ int handle_redirection(char* redirection, char* filename) {
               strcmp(redirection, "2>|") == 0 ||
               strcmp(redirection, "2>>") == 0) {
             if (strcmp(redirection, "2>") == 0) {
-              fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0644);
+              fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0664);
 
             } else {
               if (strcmp(redirection, "2>|") == 0) {
