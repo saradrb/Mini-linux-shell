@@ -8,7 +8,6 @@
 #include "internal_commands.h"
 #include "library/string.c"
 #include "my_limits.h"
-#include "pipeline.h"
 #include "redirection.h"
 #include "signal.h"
 #include "wildcard.h"
@@ -17,58 +16,7 @@ extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
 extern int previous_return_value;
 
-char **copy_part_of_cmd(char **cmd, int start, int finish) {
-  char **res = malloc((finish + 2 - start) * sizeof(char *));
-  if (res == NULL) {
-    perror("malloc");
-  }
 
-  for (int i = start; i <= finish; i++) {
-    // char *test = cmd[i];
-    res[i - start] = cmd[i];
-  }
-  res[finish + 1 - start] = NULL;
-  // if (res[finish + 1 - start] == NULL) {
-  //   int a = 5;
-  // }
-  return res;
-}
-
-int nbr_pipe(char **tab) {
-  int i = 0;
-  int len = 0;
-  while (tab[i]) {
-    if (strcmp(tab[i], "|") == 0) {
-      len++;
-    }
-    i++;
-  }
-  return len;
-}
-
-char ***split_cmd_to_pipeline(char **cmd, int nbr_of_pipes) {
-  char ***res = malloc((nbr_of_pipes + 2) * sizeof(char **));
-  int i = 0;
-  int prev = 0;
-  int j = 0;
-  while (cmd[j] != NULL) {
-    // char *tmp = cmd[j];
-    if (strcmp(cmd[j], "|") == 0) {
-      // res[i] = realloc(cmd[prev], (j + 1 - prev) * sizeof(char *));
-      res[i] = copy_part_of_cmd(cmd, prev, j - 1);
-      // test_mni_tab(res[i]);
-      i = i + 1;
-      prev = j + 1;
-      j = j + 1;
-    } else {
-      j = j + 1;
-    }
-  }
-  res[i] = copy_part_of_cmd(cmd, prev, j - 1);
-  // test_mni_tab(res[i]);
-  res[i + 1] = NULL;
-  return res;
-}
 
 /**
  * @brief Print prompt with color, containing the return value of the last
@@ -123,22 +71,25 @@ int cmd_with_redirection(char* cmd, char** args,int length, int pos_redirection)
   fd_standard[0] = dup(STDIN_FILENO);
   fd_standard[1] = dup(STDOUT_FILENO);
   fd_standard[2] = dup(STDERR_FILENO);
-  int return_value=4;
-
-  return_value =  handle_redirection(args[pos_redirection],args[pos_redirection+1]);
+  int return_value=0;
+  handle_rd:
+    length=length-2;
+    return_value =  handle_redirection(args[length],args[length+1]);
+    args[length]=NULL;
+    
   if (return_value==0){ 
-       args[pos_redirection]=NULL;
+       if (contains_valid_redirection(args,length)>0){goto handle_rd;}
        if (strcmp(cmd, "exit") == 0) {
             return_value= my_exit(args + 1, length-1);
         } else {
         if (strcmp(cmd, "cd") == 0) {
-          return_value = my_cd(args + 1, length - 1);
+          return_value= my_cd(args + 1, length-1);
         } else {
           if (strcmp(cmd, "pwd") == 0) {
-            return_value = my_pwd(args + 1, length - 1);
+             return_value= my_pwd(args + 1, length-1);
           } else {
             // execute external command with the new extanded array of args
-            return_value = extern_command(cmd, args);
+             return_value= extern_command(cmd, args);
           }
         }
       }
@@ -146,6 +97,8 @@ int cmd_with_redirection(char* cmd, char** args,int length, int pos_redirection)
   go_back_to_standard(fd_standard);
   return(return_value);
 }
+
+
 
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
@@ -262,30 +215,27 @@ static void read_cmd() {
 
       // exec command
 
-      // handle redirection if any
+      // handle redirection if any 
       int pos_redirection = contains_valid_redirection(args_extanded, size);
-      int nbr_of_pipes = nbr_pipe(args_extanded);
-      if (nbr_of_pipes > 0) {
-        char ***pipeline = split_cmd_to_pipeline(args_extanded, nbr_of_pipes);
-        if (pipeline == NULL) {
-          perror("error");
-        }
-        int n = exec_pipeline(pipeline);
-        previous_return_value = n;
-      } else if (pos_redirection > 0) {
-        previous_return_value =
-            cmd_with_redirection(cmd, args_extanded, size - 2, pos_redirection);
-      } else if (strcmp(cmd, "exit") == 0) {
-        previous_return_value = my_exit(args_extanded + 1, length);
-      } else if (strcmp(cmd, "cd") == 0) {
-        previous_return_value = my_cd(args_extanded + 1, length);
-      } else if (strcmp(cmd, "pwd") == 0) {
-        previous_return_value = my_pwd(args_extanded + 1, length);
-      } else {
-        // execute external command with the new extanded array of args
-        previous_return_value = extern_command(cmd, args_extanded);
-      }
+      if(pos_redirection>0){ 
+         previous_return_value = cmd_with_redirection(cmd,args_extanded,size,pos_redirection);
+      }else {
 
+        if (strcmp(cmd, "exit") == 0){ 
+          previous_return_value = my_exit(args_extanded + 1, length);
+        } else {
+          if (strcmp(cmd, "cd") == 0) {
+            previous_return_value = my_cd(args_extanded + 1, length);
+          } else {
+            if (strcmp(cmd, "pwd") == 0) {
+              previous_return_value = my_pwd(args_extanded + 1, length);
+            } else {
+              // execute external command with the new extanded array of args
+              previous_return_value = extern_command(cmd, args_extanded);
+            }
+          }
+        }
+      }
       free_struct(args_extanded, size);
       free(list_arg);
     }
