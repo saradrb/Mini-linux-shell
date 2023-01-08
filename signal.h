@@ -1,10 +1,10 @@
 #ifndef SIGNAL_H
 #define SIGNAL_H
 
-#include <unistd.h>
-#include <stdbool.h>
 #include <signal.h>
-#include <string.h> 
+#include <stdbool.h>
+#include <string.h>
+#include <unistd.h>
 
 void treat_signal(bool ignore);
 
