@@ -67,18 +67,14 @@ static void my_prompt() {
 
 //execute cmd with a redirection
 int cmd_with_redirection(char* cmd, char** args,int length, int pos_redirection){
-  int* fd_default;
-  int return_value=0;
-  int status = 0;
-  pid_t pd = fork();
-  switch(pd){
+  static int fd_standard[3];
+  fd_standard[0] = dup(STDIN_FILENO);
+  fd_standard[1] = dup(STDOUT_FILENO);
+  fd_standard[2] = dup(STDERR_FILENO);
+  int return_value=4;
 
-    case -1 : 
-      write(STDOUT_FILENO, "Error fork\n", 12);
-      return 1;
-    case 0 : // if we are in exec the rederection and the command and return the return_value of the command
-
-       fd_default =  handle_redirection(args[pos_redirection],args[pos_redirection+1]);
+  return_value =  handle_redirection(args[pos_redirection],args[pos_redirection+1]);
+  if (return_value==0){ 
        args[pos_redirection]=NULL;
        if (strcmp(cmd, "exit") == 0) {
             return_value= my_exit(args + 1, length-1);
@@ -94,17 +90,9 @@ int cmd_with_redirection(char* cmd, char** args,int length, int pos_redirection)
           }
         }
       }
-      go_back_to_standard(fd_default);
-      free_struct(args,length);
-      return return_value;
-
-    default:// if we are in the father thread wait the son finishes executing the command the get the return value
-     // wait for the end of child process and take his exit value
-      waitpid(pd, &status, 0);
-      return_value= WEXITSTATUS(status);
-      return return_value;
-
-  }//switch 
+  }
+  go_back_to_standard(fd_standard);
+  return(return_value);
 }
 
 

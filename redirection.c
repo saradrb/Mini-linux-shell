@@ -35,12 +35,8 @@ int contains_valid_redirection(char** args_extanded, int size) {
  * and stderr
  *
  */
-int* handle_redirection(char* redirection, char* filename) {
+int handle_redirection(char* redirection, char* filename) {
   int fd = 0;
-  static int fd_standard[3];
-  fd_standard[0] = dup(STDIN_FILENO);
-  fd_standard[1] = dup(STDOUT_FILENO);
-  fd_standard[2] = dup(STDERR_FILENO);
   int result;
   if (strcmp(redirection, "<") ==
       0) {  // redirecting stdin of the command to the file filename
@@ -48,13 +44,13 @@ int* handle_redirection(char* redirection, char* filename) {
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
       perror("opening file error");
-      return NULL;
+      return 1;
     }
 
     result = dup2(fd, STDIN_FILENO);
     if (result == -1) {
       perror("error redirecting stdin");
-      return NULL;
+      return 1;
     }
     close(fd);
   } else {
@@ -62,13 +58,13 @@ int* handle_redirection(char* redirection, char* filename) {
       fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0644);
       if (fd == -1) {
         perror("opening file error");
-        return NULL;
+        return 1;
       }
 
       result = dup2(fd, STDOUT_FILENO);
       if (result == -1) {
         perror("error redirecting stdout");
-        return NULL;
+        return 1;
       }
       close(fd);
 
@@ -77,13 +73,13 @@ int* handle_redirection(char* redirection, char* filename) {
         fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd == -1) {
           perror("opening file error");
-          return NULL;
+          return 1;
         }
 
         result = dup2(fd, STDOUT_FILENO);
         if (result == -1) {
           perror("error redirecting stdout");
-          return NULL;
+          return 1;
         }
         close(fd);
 
@@ -92,13 +88,13 @@ int* handle_redirection(char* redirection, char* filename) {
           fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
           if (fd == -1) {
             perror("opening file error");
-            return NULL;
+            return 1;
           }
 
           result = dup2(fd, STDOUT_FILENO);
           if (result == -1) {
             perror("error redirecting stdout");
-            return NULL;
+            return 1;
           }
           close(fd);
 
@@ -120,22 +116,22 @@ int* handle_redirection(char* redirection, char* filename) {
 
             if (fd == -1) {
               perror("opening file error");
-              return NULL;
+              return 1;
             }
 
             result = dup2(fd, STDERR_FILENO);
             if (result == -1) {
               perror("error redirecting stderr");
-              return NULL;
+              return 1;
             }
             close(fd);
           } else
-            return NULL;
+            return 1;
         }
       }
     }
   }
-  return fd_standard;
+  return 0;
 }
 
 
@@ -149,7 +145,7 @@ void go_back_to_standard(int* fd_std) {
   dup2(fd_std[1], STDOUT_FILENO);
   close(fd_std[1]);
 
-  dup2(fd_std[3], STDERR_FILENO);
+  dup2(fd_std[2], STDERR_FILENO);
   close(fd_std[2]);
 }
 

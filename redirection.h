@@ -29,7 +29,7 @@ int contains_valid_redirection(char** args_extanded, int size);
  * and stderr
  *
  */
-int* handle_redirection(char* redirection, char* filename);
+int handle_redirection(char* redirection, char* filename);
 
 // go back to standard descriptors for stdin stdout and stderr, after a
 // redirection
