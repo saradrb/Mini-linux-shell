@@ -53,9 +53,8 @@ int handle_redirection(char *cmd, char **args, char *redirection,
                        char *filename) {
   int input_fd = 0, output_fd = 0;
   int result;
-  if (strcmp(redirection, "<") ==
-      0) {  // redirecting stdin of the command to the file filename
-
+  // redirecting stdin of the command to the file filename
+  if (strcmp(redirection, "<") == 0) {
     input_fd = open(filename, O_RDONLY);
     if (input_fd == -1) {
       perror("opening file error");
