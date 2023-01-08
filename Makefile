@@ -2,9 +2,11 @@ CC = gcc
 CFLAGS = -Wall -g -pedantic
 LDLIBS = -lreadline
 
-slash : slash.o internal_commands.o signal.o redirection.o external_commands.o wildcard.o pipeline.o
-	$(CC) -o slash slash.o internal_commands.o signal.o redirection.o external_commands.o wildcard.o pipeline.o $(LDLIBS) -Ilibrary
+slash : slash.o internal_commands.o signal.o redirection.o external_commands.o wildcard.o pipeline.o array.o
+	$(CC) -o slash slash.o internal_commands.o signal.o redirection.o external_commands.o wildcard.o pipeline.o array.o $(LDLIBS) -Ilibrary
 
+array.o : array.c array.h
+	$(CC) $(CFLAGS) -c -o array.o array.c
 signal.o : signal.c signal.h
 	$(CC) $(CFLAGS) -c -o signal.o signal.c
 redirection.o : redirection.c redirection.h
