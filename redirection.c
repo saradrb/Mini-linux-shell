@@ -34,9 +34,7 @@ int contains_valid_redirection(char** args_extanded, int size) {
  *
  * @param redirection string that contains the redirection sign
  * @param filename the name of the destination file
- * @return return an array that contains the default descriptors of stdin dtdout
- * and stderr
- *
+ * @return return 0 if the redirection has been done or 1
  */
 int handle_redirection(char* redirection, char* filename) {
   int fd = 0;
