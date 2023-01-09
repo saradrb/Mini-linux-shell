@@ -1,7 +1,7 @@
 #include "pipeline.h"
 
 /**
- * @brief 
+ * @brief
  *
  * @param fd_read
  * @param fd_write

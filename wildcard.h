@@ -9,8 +9,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "my_limits.h"
 #include "array.h"
+#include "my_limits.h"
 
 // parse a path with a delimiter
 char **parse_path(char *path, int *length, char *delimiters);

@@ -11,21 +11,22 @@
  * returns -2 if there is no redirection
  */
 int contains_valid_redirection(char** args_extanded, int size) {
-  
-    for(int i = size-1; i>0; i--){
-      char* string = args_extanded[i];
-      if (strcmp(string, ">") == 0 || strcmp(string, "<") == 0 ||
-          strcmp(string, ">>") == 0 || strcmp(string, ">|") == 0 ||
-          strcmp(string, "2>") == 0 || strcmp(string, "2>>") == 0 ||
-          strcmp(string, "2>|") == 0 || strcmp(string, "2>") == 0) {
-          //here args_extanded[i+1] is the redirection field and it can't be a pipe 
-          if (i<size-1 && !prefix("|",args_extanded[i+1],NULL)) {return i; } // redirection symbol position
-          else {
-             return 0; //invalid redirection
-          }
-      } 
+  for (int i = size - 1; i > 0; i--) {
+    char* string = args_extanded[i];
+    if (strcmp(string, ">") == 0 || strcmp(string, "<") == 0 ||
+        strcmp(string, ">>") == 0 || strcmp(string, ">|") == 0 ||
+        strcmp(string, "2>") == 0 || strcmp(string, "2>>") == 0 ||
+        strcmp(string, "2>|") == 0 || strcmp(string, "2>") == 0) {
+      // here args_extanded[i+1] is the redirection field and it can't be a pipe
+      if (i < size - 1 && !prefix("|", args_extanded[i + 1], NULL)) {
+        return i;
+      }  // redirection symbol position
+      else {
+        return 0;  // invalid redirection
+      }
     }
-  
+  }
+
   return -1;  // means no redirection
 }
 
@@ -39,7 +40,8 @@ int contains_valid_redirection(char** args_extanded, int size) {
 int handle_redirection(char* redirection, char* filename) {
   int fd = 0;
   int result;
-  if (strcmp(redirection, "<") == 0) {  // redirecting stdin of the command to the file filename
+  if (strcmp(redirection, "<") ==
+      0) {  // redirecting stdin of the command to the file filename
 
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
@@ -155,8 +157,10 @@ int cmd_with_redirection(char* cmd, char** args, int length,
   fd_standard[1] = dup(STDOUT_FILENO);
   fd_standard[2] = dup(STDERR_FILENO);
   int return_value = 0;
-  char * sv=args[pos_redirection];
-  if (pos_redirection== 0){return 2;}
+  char* sv = args[pos_redirection];
+  if (pos_redirection == 0) {
+    return 2;
+  }
 handle_rd:
   length = length - 2;
   return_value = handle_redirection(args[length], args[length + 1]);
@@ -164,8 +168,9 @@ handle_rd:
     if (contains_valid_redirection(args, length) > 0) {
       goto handle_rd;
     }
-    sv = args[length]; // save the adress of the argument
-    args[length] = NULL; // put the pointer to argumnt = null so that the commands will stop at null 
+    sv = args[length];    // save the adress of the argument
+    args[length] = NULL;  // put the pointer to argumnt = null so that the
+                          // commands will stop at null
     if (strcmp(cmd, "exit") == 0) {
       return_value = my_exit(args + 1, length - 1);
     } else {
@@ -181,7 +186,7 @@ handle_rd:
       }
     }
   }
-  args[length]=sv;
+  args[length] = sv;
   go_back_to_standard(fd_standard);
   return (return_value);
 }

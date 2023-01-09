@@ -10,8 +10,6 @@ char *array_to_string(char **array_ofchar, int length, char *delemiter) {
   return my_string;
 }
 
-// char **char_array_concat(char **array1, char **array2) { return array1; }
-
 // free the memory allocated for the structure char**
 void free_struct(char **my_struct, int size) {
   for (int i = 0; i < size; i++) {

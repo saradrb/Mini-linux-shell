@@ -78,15 +78,7 @@ int extern_command_bis(char *cmd, char **args, int fd_write[], int fd_read[]) {
       } else if (WIFEXITED(status)) {
         return_value = WEXITSTATUS(status);
       }
-      // if (fd_write[1] != -1) {
-      //   dup2(STDOUT_FILENO, fd_write[1]);
-      //   close(fd_write[1]);
-      // }
       close(fd_write[1]);
-      // if (fd_read[0] != -1) {
-      //   dup2(STDIN_FILENO, fd_read[0]);
-      //   close(fd_read[0]);
-      // }
       close(fd_read[0]);
       // if the execution of the command has failed
       return return_value;

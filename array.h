@@ -1,9 +1,10 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include "my_limits.h"
 
 char *array_to_string(char **array_ofchar, int length, char *delemiter);

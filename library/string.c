@@ -5,7 +5,7 @@
 
 /**
  * @brief Tests if the given string contains only whitespace
- * 
+ *
  * @param string a string
  * @return true the given string contains only whitespace
  * @return false the given string contains other characters
@@ -19,7 +19,7 @@ static bool only_whitespace(const char* string) {
 
 /**
  * @brief Return a trimmed version of the given string
- * 
+ *
  * @param string a string
  * @return char* an allocated trimmed version
  */
