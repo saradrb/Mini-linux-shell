@@ -3,7 +3,7 @@
 #include <readline/readline.h>
 #include <stdbool.h>
 #include <sys/wait.h>
-
+#include <errno.h>
 #include "external_commands.h"
 #include "internal_commands.h"
 #include "library/string.c"
@@ -231,11 +231,12 @@ static void read_cmd() {
 
       for (int i = 0; i < length; i++) {
         if (prefix("**", list_arg[i], NULL)) {
+          //if it contains a ** return all the possible options in the current repo tree 
           char **mypath = parse_path(list_arg[i], &nb_parts, "/");
           args_extanded = expand_double_star(mypath + 1, nb_parts - 1, "",
                                              args_extanded, &size);
 
-          if (size == 0) {
+          if (size == 0) { //if we dont find any option concatenate arg as it is
             args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
           }
           free(mypath);
@@ -266,17 +267,8 @@ static void read_cmd() {
             free(mypath);
             free(expanded_path);
           } else {
-            // concat elem to the arg array
-            /* for (int i = 0; i < size; i++)
-            {
-              printf("***%s\n",args_extanded[i]);
-            } */
-
+            //concat elem to the arg array 
             args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
-            /*  for (int i = 0; i < size; i++)
-            {
-              printf("%s\n",args_extanded[i]);
-            } */
           }
         }
       }  // expanding the path
@@ -303,17 +295,24 @@ static void read_cmd() {
         previous_return_value =
             cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
       } else {
-        if (strcmp(cmd, "exit") == 0) {
-          previous_return_value = my_exit(args_extanded + 1, length);
-        } else {
-          if (strcmp(cmd, "cd") == 0) {
-            previous_return_value = my_cd(args_extanded + 1, length);
+        if (pos_redirection == -2){
+
+          previous_return_value = 2;
+
+        }else {
+
+          if (strcmp(cmd, "exit") == 0) {
+            previous_return_value = my_exit(args_extanded + 1, length);
           } else {
-            if (strcmp(cmd, "pwd") == 0) {
-              previous_return_value = my_pwd(args_extanded + 1, length);
+            if (strcmp(cmd, "cd") == 0) {
+              previous_return_value = my_cd(args_extanded + 1, length);
             } else {
-              // execute external command with the new extanded array of args
-              previous_return_value = extern_command(cmd, args_extanded);
+              if (strcmp(cmd, "pwd") == 0) {
+                previous_return_value = my_pwd(args_extanded + 1, length);
+              } else {
+                // execute external command with the new extanded array of args
+                previous_return_value = extern_command(cmd, args_extanded);
+              }
             }
           }
         }

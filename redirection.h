@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "wildcard.h"
 
 #include "external_commands.h"
 #include "internal_commands.h"

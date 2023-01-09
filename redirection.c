@@ -12,14 +12,18 @@
  */
 int contains_valid_redirection(char** args_extanded, int size) {
 
-    if (size-2 > 0){
-      char* string = args_extanded[size-2];
+    for(int i = size-1; i>0; i--){
+      char* string = args_extanded[i];
       if (strcmp(string, ">") == 0 || strcmp(string, "<") == 0 ||
           strcmp(string, ">>") == 0 || strcmp(string, ">|") == 0 ||
           strcmp(string, "2>") == 0 || strcmp(string, "2>>") == 0 ||
           strcmp(string, "2>|") == 0 || strcmp(string, "2>") == 0) {
-          return (size-2);
-        }  // redirection symbol position
+          //here args_extanded[i+1] is the redirection field and it can't be a pipe 
+          if (i<size-1 && !prefix("|",args_extanded[i+1],NULL)) return i;  // redirection symbol position
+          else {
+            return -2; //invalid redirection
+          }
+      } 
     }
   
   return -1;  // means no redirection
