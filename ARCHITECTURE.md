@@ -118,7 +118,7 @@ Fonction expand_star (path, length, current_path) :
         concatène toutes les options trouvées avec current_rep
         retourne toutes les options concaténées
     sinon // path contient un répertoire (A/*B/*.c)
-        tant que path contient plus de deux fichiers (un fichier et un répertoire)
+        tant que path contient plus de deux fichiers (un fichier et au moins un répertoire)
             si le répertoire contient le joker alors
                 cherche tous les répertoires du répertoire courant qui correspondent au motif
             sinon
@@ -133,13 +133,13 @@ Le joker `**/` permet quant à lui de prendre tous les chemins physiques ayant c
 
 Une explication globale de la fonction permettant l'expansion du joker `**/` est détaillée ci-dessous :
 ```
-Entrée : path (le chemin à expandre sans le joker), length (le nombre de fichier dans path), current_path (le chemin du répertoire)
+Entrée : path (le chemin à expandre sans le joker), length (le nombre de fichier dans path), current_path (le chemin du répertoire courant)
 Sortie : un tableau contenant tous les chemins étendus
 Fonction expand_double_star (path, length, current_path) :
-    si path contient seulement le joker alors
+    si path contenait seulement le joker alors
         renvoie toute l'arborescence du répertoire courant
     sinon
-        cherche toutes les options du répertoire courant
+        cherche toutes les options du répertoire courant // trouvées avec le joker *
         pour chaque option respectant le motif faire
             concatène l'option trouvé avec current_path
         rappelle la méthode en avançant dans path et current_path
