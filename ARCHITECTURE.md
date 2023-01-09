@@ -168,7 +168,7 @@ Après la commande exécutée, les redirections sont remises à défaut.
 ### Gestion des pipelines
 Deux commandes reliés par des pipelines ont leur comportement légèrement modifiés : la première commande envoie son résultat à la deuxième commande qui s'en sert comme entrée. Il est possible de rediriger l'entrée standard pour la première commande, de rediriger la sortie standard pour la dernière commande et de rediriger la sortie standard pour chaque commande.
 
-Une explication globale des fonctions permettant les redirections est détaillée ci-dessous :
+Une explication globale des fonctions permettant les pipelines est détaillée ci-dessous :
 ```
 Entrée : un tableau de tableau de string, séparés selon les pipes (ls -l | wc -l devient [["ls", "-l"], ["wc", "-l"]])
 Sortie : la valeur de retour de la dernière fonction exécuté
