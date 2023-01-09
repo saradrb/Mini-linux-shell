@@ -18,52 +18,57 @@ extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
 extern int previous_return_value;
 
-char **copy_part_of_cmd(char **cmd, int start, int finish) {
+static char **copy_part_of_cmd(char **cmd, int start, int finish) {
   char **res = malloc((finish + 2 - start) * sizeof(char *));
   if (res == NULL) {
     perror("malloc");
+    free(res);
   }
 
   for (int i = start; i <= finish; i++) {
-    res[i - start] = cmd[i];
+    char *string = malloc(strlen(cmd[i]) + 1);
+    if (string == NULL) {
+      perror("malloc");
+      free(string);
+    }
+
+    strncpy(string, cmd[i], strlen(cmd[i]) + 1);
+    res[i - start] = string;
+    // res[i - start] = cmd[i];
   }
+
   res[finish + 1 - start] = NULL;
-  if (res[finish + 1 - start] == NULL) {
-  }
   return res;
 }
 
-void free_triple_tab_slash(char ***tab) {
+static void free_triple_tab(char ***tab) {
   int i = 0;
   while (tab[i] != NULL) {
     int j = 0;
-    char **tmp = tab[i];
-    while (tmp[j] != NULL) {
+    char **subarray = tab[i];
+    while (subarray[j] != NULL) {
+      free(subarray[j]);
+      j++;
     }
+    free(subarray);
+    i++;
   }
   free(tab);
-  // // // Pour chaque char ** dans le tableau
-  // // for (int i = 0; tableau[i] != NULL; i++) {
-  // //   // Libérer l'espace mémoire alloué pour le char *
-  // //   free((*tableau)[i]);
-  // // }
-  // // // Libérer l'espace mémoire alloué pour le char **
-  // // free(*tableau);
-  // // // Mettre le pointeur à NULL pour éviter tout accès futur à cet espace
-  // mémoire
-  // // *tableau = NULL;
 }
 
 char ***split_cmd_to_pipeline(char **cmd, int nbr_of_pipes) {
   char ***res = malloc((nbr_of_pipes + 2) * sizeof(char **));
+  if (res == NULL) {
+    perror("malloc");
+    free(res);
+  }
+
   int i = 0;
   int prev = 0;
   int j = 0;
   while (cmd[j] != NULL) {
     if (strcmp(cmd[j], "|") == 0) {
-      // res[i] = realloc(cmd[prev], (j + 1 - prev) * sizeof(char *));
       res[i] = copy_part_of_cmd(cmd, prev, j - 1);
-      // test_mni_tab(res[i]);
       i = i + 1;
       prev = j + 1;
       j = j + 1;
@@ -72,7 +77,6 @@ char ***split_cmd_to_pipeline(char **cmd, int nbr_of_pipes) {
     }
   }
   res[i] = copy_part_of_cmd(cmd, prev, j - 1);
-  // test_mini_tab(res[i]);
   res[i + 1] = NULL;
   return res;
 }
@@ -220,9 +224,18 @@ static void read_cmd() {
     int nb_cmds = 0;
     if (strstr(cmd, "*")) {
       char *expanded_path = malloc(sizeof(char) * PATH_MAX);
+      if (expanded_path == NULL) {
+        perror("malloc");
+        free(expanded_path);
+      }
+
       memset(expanded_path, 0, sizeof(char) * PATH_MAX);
       char **mypath = parse_path(cmd, &nb_parts, "/");
       char **new_cmd = malloc(sizeof(char *) * 10);
+      if (new_cmd == NULL) {
+        perror("malloc");
+        free(new_cmd);
+      }
 
       expand_star(mypath, nb_parts, expanded_path, new_cmd, &nb_cmds);
       free(mypath);
@@ -259,11 +272,19 @@ static void read_cmd() {
           // then expand the star and return an array with all the path
           // options
           char *expanded_path = malloc(sizeof(char) * PATH_MAX);
+          if (expanded_path == NULL) {
+            perror("malloc");
+            free(expanded_path);
+          }
           memset(expanded_path, 0, sizeof(char) * PATH_MAX);
 
           char **mypath = parse_path(list_arg[i], &nb_parts, "/");
           int nb_options = 0;
           char **options = malloc(sizeof(char *) * PATH_MAX);
+          if (options == NULL) {
+            perror("malloc");
+            free(options);
+          }
 
           expand_star(mypath, nb_parts, expanded_path, options, &nb_options);
           switch (nb_options) {
@@ -298,11 +319,12 @@ static void read_cmd() {
       if (test_tab(pipeline) == 0) {
         int n = exec_pipeline(pipeline);
         previous_return_value = n;
-        free(pipeline);
+        // free(pipeline);
       } else {
-        free(pipeline);
+        // free(pipeline);
         previous_return_value = 2;
       }
+      free_triple_tab(pipeline);
 
     } else if (pos_redirection > 0 || pos_redirection == 0) {
       previous_return_value =
