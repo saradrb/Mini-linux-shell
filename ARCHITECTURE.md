@@ -100,15 +100,15 @@ Fonction expand_star (path, length, current_path) :
         cherche toutes les options du répertoire courant current_path qui correspondent au motif
         concatène toutes les options trouvées avec le répertoire courant
         retourne toutes les options concaténées
-    sinon (path est un chemin) // path contient un repertoire (A/*B/*.c)
-        tant que path contient plus de deux elements (le premier est forcement un repertoire) 
+    sinon (path est un chemin) // path contient un répertoire (A/*B/*.c)
+        tant que path contient plus de deux elements (le premier est forcement un répertoire) 
             si l'element contient * 
             cherche toutes les options du répertoire courant qui correspondent au motif
-            sinon la seule option est l'element lui meme (repertoire ne contient pas * ex: A/*.c)
+            sinon la seule option est l'element lui meme (répertoire ne contient pas * ex: A/*.c)
             Pour cahque option trouvé, 
                 la concatener avec le répertoire courant current_path
-                supprimer l'element de path
-                faire appel recursive de expand _star pour chercher le path restant dans le nouveau reperoire courant (repetoire courant c'est current path est concatené avec l'option trouvé)
+                supprime l'element de path
+                fait un appel recursive de expand _star pour chercher le path restant dans le nouveau reperoire courant (repetoire courant c'est current path concatené avec l'option trouvé)
             
 ```
 
@@ -118,13 +118,13 @@ Une explication globale de la fonction permettant l'expansion du joker `**/` est
 ```
 Fonction expand_double_star (path, length, current_rep) :
     on supprime le joker **/ du path 
-    si path contient seulement le joker donc path devient vide apres suppression alors
+    si path contient seulement le joker donc path devient vide après suppression alors
         renvoie toute l'arborescence du répertoire courant
     sinon
-        Parcourir toute  l'arborescence du repertoire_courant et dans chaque repertoire de l'arborescence 
-            Appelle expand_sta(path,length,current_rep) pour recuperer toute les options de path à partir de ce ce repertoire
-            concatène les options trouvé dans un tableau recursivent
-        renvoie toute les options trouvé dans tout les repertoire de l'arborecence initial 
+        Parcourir toute  l'arborescence du répertoire_courant et dans chaque répertoire de l'arborescence 
+            Appelle expand_sta(path,length,current_rep) pour recuperer toute les options de path à partir de ce ce répertoire
+            concatène les options trouvées dans un tableau recursivent
+        renvoie toute les options trouvées dans tout les répertoires de l'arborescence initiale
         
 ```
 
@@ -138,7 +138,7 @@ Fonction redirection (arguments) :
     tant que arguments contient des redirections faire
         récupère le symbole de redirection
         récupère le fichier d'origine/destination 
-        tester si le champs de redirection est valide : il exite un champs apres le symbole de redirection et si ce n'est pas un pipe 
+        tester si le champs de redirection est valide : il exite un champs après le symbole de redirection et si ce n'est pas un pipe 
         si champs valide alors effectue la redirection
         sinon renvoyer le code d'erreur 2 (syntax error)
 ```
