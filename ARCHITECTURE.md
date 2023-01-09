@@ -21,7 +21,9 @@ La fonction `exit` prend en argument un tableau d'argument et sa taille, et quit
 
 Les différentes étapes de la fonction `exit` sont détaillées ci-dessous :
 ```
-Fonction exit (tab, length) :
+Entrée : un tableau contenant les arguments de la commande et sa taille
+Sortie : 0 si la fermeture s'est bien passé, un autre chiffre sinon
+Fonction exit :
     vérification des arguments donnés : si plus d'un argument a été donné alors affiche une erreur
     si aucun argument n'a été donné alors
         quitte le programme avec la valeur de retour de la dernière fonction appelée
@@ -36,7 +38,9 @@ La fonction `pwd` prend en argument un tableau d'argument et sa taille, affiche 
 
 Les différentes étapes de la fonction `pwd` sont détaillées ci-dessous :
 ```
-Fonction pwd (tab, length) :
+Entrée : un tableau contenant les arguments de la commande et sa taille
+Sortie : 0 si l'affichage s'est bien passé, un autre chiffre sinon
+Fonction pwd :
     vérification des arguments données : si un argument n'est pas -P ou -L alors affiche une erreur
     si l'option est -P alors
         affiche le chemin interprété de manière physique
@@ -50,7 +54,9 @@ La fonction `cd` prend en argument un tableau d'argument et sa taille, change le
 
 Les différentes étapes de la fonction `cd` sont détaillées ci-dessous :
 ```
-Fonction cd (tab, length) :
+Entrée : un tableau contenant les arguments de la commande et sa taille
+Sortie : 0 si le changement de répertoire s'est bien passé, un autre chiffre sinon
+Fonction cd :
     vérification des arguments donnés : si plus d'un argument qui n'est pas -, -P, -L est trouvé alors affiche une erreur
 
     si aucun chemin n'a été donné alors
@@ -78,7 +84,9 @@ Les commandes externes à `slash` sont exécutées dans un processus fils, à l'
 
 Une explication globale de la fonction exécutant les commandes externes est détaillée ci-dessous :
 ```
-Fonction extern_command(cmd, arguments) : 
+Entrée : cmd (le nom de la commande), arguments (un tableau contenant le nom de la commande et ses arguments)
+Sortie : la valeur de retour de la commande exécutée
+Fonction extern_command : 
     crée un fils
     si c'est le fils alors
         restaure la gestion des signaux par défaut
@@ -94,38 +102,42 @@ Le programme `slash` permet l'expansion de deux jokers : `*` et `**/`.
 Le joker `*` permet de prendre tous les fichiers respectant le motif donné. Pour ce faire, une fonction `expand_star` a été écrite, qui cherche tous les fichiers correspondant au motif et renvoie un tableau contenant toutes les expansions.
 
 Une explication globale de la fonction permettant l'expansion du joker `*` est détaillée ci-dessous :
-```
-Fonction expand_star (path, length, current_path) :
-    si le chemin path à expandre ne contient qu'un seul fichier alors
-        cherche toutes les options du répertoire courant current_path qui correspondent au motif
-        concatène toutes les options trouvées avec le répertoire courant
+```c
+Entrée : path (le chemin à expandre), length (le nombre de fichier contenu dans le chemin), current_path (le chemin du répertoire courant)
+Sortie : un tableau contenant tous les chemins étendus
+Fonction expand_star (path, length, current_path) :  
+    si path ne contient pas de joker alors
+        retourne path
+    si path ne contient qu'un seul fichier alors
+        cherche toutes les options dans current_rep qui correspondent au motif
+        concatène toutes les options trouvées avec current_rep
         retourne toutes les options concaténées
-    sinon (path est un chemin) // path contient un répertoire (A/*B/*.c)
-        tant que path contient plus de deux elements (le premier est forcement un répertoire) 
-            si l'element contient * 
+    sinon // path contient un répertoire (A/*B/*.c)
+        tant que path contient plus de deux fichiers (un fichier et un répertoire)
+            si le répertoire contient le joker alors
+                cherche tous les répertoires du répertoire courant qui correspondent au motif
+            sinon
                 cherche toutes les options du répertoire courant qui correspondent au motif
-            sinon renvoie l'element lui meme (répertoire ne contient pas * ex: A/*.c)
-            Pour cahque option trouvé, 
-                la concatene avec le répertoire courant current_path
-                supprime l'element de path
-                fait un appel recursive de expand _star pour chercher le path restant dans le nouveau reperoire courant (repetoire courant c'est current path concatené avec l'option trouvé)
-            
+                pour chaque option trouvé faire
+                    concatène l'option trouvé avec current_path
+                    supprime le fichier de path
+                    rappelle la méthode en avançant path et current_rep
 ```
 
 Le joker `**/` permet quant à lui de prendre tous les chemins physiques ayant comme suffixe ce qu'il se trouve après le joker. L'implémentation de cette méthode, `expand_double_star`, est ainsi similaire à celle de `expand_star`.
 
 Une explication globale de la fonction permettant l'expansion du joker `**/` est détaillée ci-dessous :
 ```
-Fonction expand_double_star (path, length, current_rep) :
-    //on supprime le joker **/ du path avant de l'envoyer en pamamétres 
-    si path contient seulement le joker donc path devient vide après suppression alors
+Entrée : path (le chemin à expandre sans le joker), length (le nombre de fichier dans path), current_path (le chemin du répertoire)
+Sortie : un tableau contenant tous les chemins étendus
+Fonction expand_double_star (path, length, current_path) :
+    si path contient seulement le joker alors
         renvoie toute l'arborescence du répertoire courant
     sinon
-        Parcours toute l'arborescence du répertoire_courant et dans chaque répertoire de l'arborescence 
-            Appelle expand_sta(path,length,current_rep) pour recuperer toute les options de path à partir de ce ce répertoire
-            concatène les options trouvées dans un tableau recursivent
-        renvoie toute les options trouvées dans tout les répertoires de l'arborescence initiale
-        
+        cherche toutes les options du répertoire courant
+        pour chaque option respectant le motif faire
+            concatène l'option trouvé avec current_path
+        rappelle la méthode en avançant dans path et current_path
 ```
 
 ### Gestion des redirections
@@ -134,32 +146,47 @@ Le programme `slash` permet de rediriger l'entrée standard, la sortie standard 
 
 Une explication globale de la fonction permettant les redirections est détaillée ci-dessous :
 ```
+Entrée : arguments (un tableau contenant tous les arguments de la commande)
+Sortie : 0 si la redirection s'est effectuée, un autre chiffre sinon
 Fonction redirection (arguments) :
     tant que arguments contient des redirections faire
         récupère le symbole de redirection
         récupère le fichier d'origine/destination 
-        teste si le champs de redirection est valide : il exite un champs après le symbole de redirection et ce n'est pas un pipe 
-        si champs valide alors effectue la redirection
-        sinon renvoie le code d'erreur 2 (syntax error)
+        si ce qui suit après ou avant la redirection n'est pas valide alors
+            renvoie une erreur
+        sinon
+            effectue la redirection
 ```
 
 Après la commande exécutée, les redirections sont remises à défaut.
 
 ### Gestion des pipelines
-Deux commandes reliés par des pipelines ont leur comportement légèrement modifiés : la première commande envoie son résultat à la deuxième commande qui s'en sert comme entrée. Il est possible de rediriger l'entrée standard pour la première commande, et de regiriger la sortie standard pour la dernière commande.
+Deux commandes reliés par des pipelines ont leur comportement légèrement modifiés : la première commande envoie son résultat à la deuxième commande qui s'en sert comme entrée. Il est possible de rediriger l'entrée standard pour la première commande, de rediriger la sortie standard pour la dernière commande et de rediriger la sortie standard pour chaque commande.
 
-La gestion des pipelines est gérée par plusieurs méthodes. La première méthode, `exec_pipeline` permet de regarder la présence ou non des bonnes redirections aux bons instants. Si une redirection est présente et valide, alors il l'effectue avant d'exécuter la commande. Sinon, il exécute uniquement la commande en remplissant les pipelines de la bonne valeur.
-
+Une explication globale des fonctions permettant les redirections est détaillée ci-dessous :
 ```
-Fonction exec_pipeline (tab) :
-    A ECRIRE
+Entrée : un tableau de tableau de string, séparés selon les pipes (ls -l | wc -l devient [["ls", "-l"], ["wc", "-l"]])
+Sortie : la valeur de retour de la dernière fonction exécuté
+Fonction pipeline :
+    si la première commande contient des redirections valides alors
+        effectue les redirections
+    exécute la commande et récupère le résultat dans un pipe
+    pour chaque commande entre la première et la dernière faire
+        si la commande contient une redirection valide alors
+            effectue la redirection
+        exécute la commande en prenant comme entrée le précédent pipe et en récupérant le résultat dans un nouveau pipe
+    si la dernière commande contient une redirection valide alors
+        effectue la redirection
+    exécute la commande en prenant comme entrée le précédent pipe
+    retourne la valeur de retour de la commande exécutée
 ```
 
 ### Gestion des signaux
 Le programme `slash` ignore les signaux `SIGINT` et `SIGTERM`, contrairement à ses fils. Pour ce faire, une fonction `treat_signal(bool)` a été écrite, qui ignore ou non les deux signaux selon le boolean donné.
 
 ```
-Fonction treat_signal (bool) :
+Entrée : un boolean
+Fonction treat_signal :
     si le boolean est à vrai alors
         ignore les deux signaux
     sinon
