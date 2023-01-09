@@ -11,6 +11,15 @@
  * returns -2 if there is no redirection
  */
 int contains_valid_redirection(char** args_extanded, int size) {
+  if (size - 2 > 0) {
+    char* string = args_extanded[size - 2];
+    if (strcmp(string, ">") == 0 || strcmp(string, "<") == 0 ||
+        strcmp(string, ">>") == 0 || strcmp(string, ">|") == 0 ||
+        strcmp(string, "2>") == 0 || strcmp(string, "2>>") == 0 ||
+        strcmp(string, "2>|") == 0 || strcmp(string, "2>") == 0) {
+      return (size - 2);
+    }  // redirection symbol position
+  }
 
     for(int i = size-1; i>0; i--){
       char* string = args_extanded[i];
@@ -41,7 +50,8 @@ int contains_valid_redirection(char** args_extanded, int size) {
 int handle_redirection(char* redirection, char* filename) {
   int fd = 0;
   int result;
-  if (strcmp(redirection, "<") ==0) {  // redirecting stdin of the command to the file filename
+  if (strcmp(redirection, "<") ==
+      0) {  // redirecting stdin of the command to the file filename
 
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
@@ -136,8 +146,6 @@ int handle_redirection(char* redirection, char* filename) {
   return 0;
 }
 
-
-
 // go back to standard descriptors for stdin stdout and stderr, after a
 // redirection
 void go_back_to_standard(int* fd_std) {
@@ -152,7 +160,7 @@ void go_back_to_standard(int* fd_std) {
 }
 
 // execute cmd with a redirection
-int cmd_with_redirection(char *cmd, char **args, int length,
+int cmd_with_redirection(char* cmd, char** args, int length,
                          int pos_redirection) {
   static int fd_standard[3];
   fd_standard[0] = dup(STDIN_FILENO);
@@ -190,3 +198,26 @@ handle_rd:
   return (return_value);
 }
 
+int cmd_with_redirection_pipe(char* cmd, char** args, int length,
+                              int pos_redirection, int fd_write[],
+                              int fd_read[]) {
+  static int fd_standard[3];
+  fd_standard[0] = dup(STDIN_FILENO);
+  fd_standard[1] = dup(STDOUT_FILENO);
+  fd_standard[2] = dup(STDERR_FILENO);
+  int return_value = 0;
+handle_rd:
+  length = length - 2;
+  return_value = handle_redirection(args[length], args[length + 1]);
+  args[length] = NULL;
+
+  if (return_value == 0) {
+    if (contains_valid_redirection(args, length) > 0) {
+      goto handle_rd;
+    }
+    // execute external command with the new extanded array of args
+    return_value = extern_command_bis(cmd, args, fd_write, fd_read);
+  }
+  go_back_to_standard(fd_standard);
+  return (return_value);
+}

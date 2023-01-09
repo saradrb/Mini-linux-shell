@@ -42,5 +42,8 @@ void go_back_to_standard(int* fd_std);
 // execute cmd with a redirection
 int cmd_with_redirection(char* cmd, char** args, int length,
                          int pos_redirection);
+int cmd_with_redirection_pipe(char* cmd, char** args, int length,
+                              int pos_redirection, int fd_write[],
+                              int fd_read[]);
 
 #endif

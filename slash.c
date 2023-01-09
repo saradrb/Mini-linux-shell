@@ -1,9 +1,10 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <stdbool.h>
 #include <sys/wait.h>
-#include <errno.h>
+
 #include "external_commands.h"
 #include "internal_commands.h"
 #include "library/string.c"
@@ -24,12 +25,10 @@ char **copy_part_of_cmd(char **cmd, int start, int finish) {
   }
 
   for (int i = start; i <= finish; i++) {
-    char *test = cmd[i];
     res[i - start] = cmd[i];
   }
   res[finish + 1 - start] = NULL;
   if (res[finish + 1 - start] == NULL) {
-    int a = 5;
   }
   return res;
 }
@@ -40,8 +39,6 @@ void free_triple_tab_slash(char ***tab) {
     int j = 0;
     char **tmp = tab[i];
     while (tmp[j] != NULL) {
-      char *f = tmp[j];
-      char e = ' ';
     }
   }
   free(tab);
@@ -63,7 +60,6 @@ char ***split_cmd_to_pipeline(char **cmd, int nbr_of_pipes) {
   int prev = 0;
   int j = 0;
   while (cmd[j] != NULL) {
-    char *tmp = cmd[j];
     if (strcmp(cmd[j], "|") == 0) {
       // res[i] = realloc(cmd[prev], (j + 1 - prev) * sizeof(char *));
       res[i] = copy_part_of_cmd(cmd, prev, j - 1);
@@ -81,16 +77,23 @@ char ***split_cmd_to_pipeline(char **cmd, int nbr_of_pipes) {
   return res;
 }
 
-void test_tab(char ***tab) {
+int test_tab(char ***tab) {
   int i = 0;
   while (tab[i] != NULL) {
     int j = 0;
     char **tmp = tab[i];
-    while (tmp[j] != NULL) {
-      char *f = tmp[j];
-      char e = ' ';
+    if (tmp[j] == NULL) {
+      return 55;
     }
+
+    // while (tmp[j] != NULL) {
+    //   char *f = tmp[j];
+    //   char e = ' ';
+    //   j++;
+    // }
+    i++;
   }
+  return 0;
 }
 
 int nbr_pipe(char **tab) {
@@ -231,12 +234,14 @@ static void read_cmd() {
 
       for (int i = 0; i < length; i++) {
         if (prefix("**", list_arg[i], NULL)) {
-          //if it contains a ** return all the possible options in the current repo tree 
+          // if it contains a ** return all the possible options in the current
+          // repo tree
           char **mypath = parse_path(list_arg[i], &nb_parts, "/");
           args_extanded = expand_double_star(mypath + 1, nb_parts - 1, "",
                                              args_extanded, &size);
 
-          if (size == 0) { //if we dont find any option concatenate arg as it is
+          if (size ==
+              0) {  // if we dont find any option concatenate arg as it is
             args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
           }
           free(mypath);
@@ -267,7 +272,7 @@ static void read_cmd() {
             free(mypath);
             free(expanded_path);
           } else {
-            //concat elem to the arg array 
+            // concat elem to the arg array
             args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
           }
         }
@@ -287,20 +292,24 @@ static void read_cmd() {
         if (pipeline == NULL) {
           perror("error");
         }
-        int n = exec_pipeline(pipeline);
-        previous_return_value = n;
-        // free_triple_tab_test(pipeline, -2);
-        free(pipeline);
+        if (test_tab(pipeline) == 0) {
+          int n = exec_pipeline(pipeline);
+          previous_return_value = n;
+          // free_triple_tab_test(pipeline, -2);
+          free(pipeline);
+        } else {
+          free(pipeline);
+          previous_return_value = 2;
+        }
+
       } else if (pos_redirection > 0) {
         previous_return_value =
             cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
       } else {
-        if (pos_redirection == -2){
-
+        if (pos_redirection == -2) {
           previous_return_value = 2;
 
-        }else {
-
+        } else {
           if (strcmp(cmd, "exit") == 0) {
             previous_return_value = my_exit(args_extanded + 1, length);
           } else {
