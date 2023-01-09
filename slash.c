@@ -150,42 +150,6 @@ static void my_prompt() {
   }
 }
 
-// execute cmd with a redirection
-int cmd_with_redirection(char *cmd, char **args, int length,
-                         int pos_redirection) {
-  static int fd_standard[3];
-  fd_standard[0] = dup(STDIN_FILENO);
-  fd_standard[1] = dup(STDOUT_FILENO);
-  fd_standard[2] = dup(STDERR_FILENO);
-  int return_value = 0;
-handle_rd:
-  length = length - 2;
-  return_value = handle_redirection(args[length], args[length + 1]);
-  args[length] = NULL;
-
-  if (return_value == 0) {
-    if (contains_valid_redirection(args, length) > 0) {
-      goto handle_rd;
-    }
-    if (strcmp(cmd, "exit") == 0) {
-      return_value = my_exit(args + 1, length - 1);
-    } else {
-      if (strcmp(cmd, "cd") == 0) {
-        return_value = my_cd(args + 1, length - 1);
-      } else {
-        if (strcmp(cmd, "pwd") == 0) {
-          return_value = my_pwd(args + 1, length - 1);
-        } else {
-          // execute external command with the new extanded array of args
-          return_value = extern_command(cmd, args);
-        }
-      }
-    }
-  }
-  go_back_to_standard(fd_standard);
-  return (return_value);
-}
-
 // function that takes the input line and parse it, it returns an array of args
 // , number of args and the command
 static char **split_line(char *line, char **cmd, int *length,
@@ -251,14 +215,14 @@ static void read_cmd() {
         free(mypath);
         free(expanded_path);
 
-        switch(nb_cmds) {
+        switch (nb_cmds) {
           case 0:
             args_extanded = concat_elem(args_extanded, &size, cmd);
           default:
             args_extanded = concat_tab(args_extanded, &size, new_cmd, nb_cmds);
             cmd = args_extanded[0];
         }
-      
+
         free(new_cmd);
 
       } else {
@@ -288,31 +252,31 @@ static void read_cmd() {
             char **options = malloc(sizeof(char *) * PATH_MAX);
 
             expand_star(mypath, nb_parts, expanded_path, options, &nb_options);
-            switch (nb_options){
-                case 0:
-                  args_extanded=concat_elem(args_extanded, &size, list_arg[i]);
-                default:
+            switch (nb_options) {
+              case 0:
+                args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
+              default:
                 // concat final array to the argument array
-                  args_extanded = concat_tab(args_extanded, &size, options, nb_options);
+                args_extanded =
+                    concat_tab(args_extanded, &size, options, nb_options);
             }
-            
+
             // free the allocated memory
             free(options);
             free(mypath);
             free(expanded_path);
           } else {
-            //concat elem to the arg array 
+            // concat elem to the arg array
             /* for (int i = 0; i < size; i++)
             {
               printf("***%s\n",args_extanded[i]);
             } */
-            
+
             args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
             /*  for (int i = 0; i < size; i++)
             {
               printf("%s\n",args_extanded[i]);
             } */
-            
           }
         }
       }  // expanding the path
@@ -322,21 +286,20 @@ static void read_cmd() {
       // handle redirection if any
       int pos_redirection = contains_valid_redirection(args_extanded, size);
       // test_mini_tab(args_extanded);
-      // int nbr_of_pipes = nbr_pipe(args_extanded);
+      int nbr_of_pipes = nbr_pipe(args_extanded);
       // write(1, "\n\n\n", 4);
       // test_mini_tab(args_extanded);
       // printf("nbr_pipes : %d\n", nbr_of_pipes);
-      // if (nbr_of_pipes > 0) {
-      //   char ***pipeline = split_cmd_to_pipeline(args_extanded,
-      //   nbr_of_pipes); if (pipeline == NULL) {
-      //     perror("error");
-      //   }
-      //   int n = exec_pipeline(pipeline);
-      //   previous_return_value = n;
-      //   // free_triple_tab_test(pipeline, -2);
-      //   free(pipeline);
-      // } else
-      if (pos_redirection > 0) {
+      if (nbr_of_pipes > 0) {
+        char ***pipeline = split_cmd_to_pipeline(args_extanded, nbr_of_pipes);
+        if (pipeline == NULL) {
+          perror("error");
+        }
+        int n = exec_pipeline(pipeline);
+        previous_return_value = n;
+        // free_triple_tab_test(pipeline, -2);
+        free(pipeline);
+      } else if (pos_redirection > 0) {
         previous_return_value =
             cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
       } else {
@@ -356,7 +319,7 @@ static void read_cmd() {
         }
       }
       // free_triple_tab_slash(pipeline);
-      //printf("final size is %d\n",size);
+      // printf("final size is %d\n",size);
       free_struct(args_extanded, size);
       free(list_arg);
     }

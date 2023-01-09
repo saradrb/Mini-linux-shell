@@ -147,3 +147,39 @@ void go_back_to_standard(int* fd_std) {
   close(fd_std[2]);
 }
 
+// execute cmd with a redirection
+int cmd_with_redirection(char *cmd, char **args, int length,
+                         int pos_redirection) {
+  static int fd_standard[3];
+  fd_standard[0] = dup(STDIN_FILENO);
+  fd_standard[1] = dup(STDOUT_FILENO);
+  fd_standard[2] = dup(STDERR_FILENO);
+  int return_value = 0;
+handle_rd:
+  length = length - 2;
+  return_value = handle_redirection(args[length], args[length + 1]);
+  args[length] = NULL;
+
+  if (return_value == 0) {
+    if (contains_valid_redirection(args, length) > 0) {
+      goto handle_rd;
+    }
+    if (strcmp(cmd, "exit") == 0) {
+      return_value = my_exit(args + 1, length - 1);
+    } else {
+      if (strcmp(cmd, "cd") == 0) {
+        return_value = my_cd(args + 1, length - 1);
+      } else {
+        if (strcmp(cmd, "pwd") == 0) {
+          return_value = my_pwd(args + 1, length - 1);
+        } else {
+          // execute external command with the new extanded array of args
+          return_value = extern_command(cmd, args);
+        }
+      }
+    }
+  }
+  go_back_to_standard(fd_standard);
+  return (return_value);
+}
+
