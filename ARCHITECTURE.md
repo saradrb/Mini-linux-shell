@@ -96,15 +96,20 @@ Le joker `*` permet de prendre tous les fichiers respectant le motif donné. Pou
 Une explication globale de la fonction permettant l'expansion du joker `*` est détaillée ci-dessous :
 ```
 Fonction expand_star (path, length, current_path) :
-    si le chemin à expandre ne contient qu'un seul fichier alors
-        cherche toutes les options du répertoire courant qui correspondent au motif
+    si le chemin path à expandre ne contient qu'un seul fichier alors
+        cherche toutes les options du répertoire courant current_path qui correspondent au motif
         concatène toutes les options trouvées avec le répertoire courant
         retourne toutes les options concaténées
-    sinon
-        tant que path contient des jokers non traité faire
+    sinon (path est un chemin) // path contient un repertoire (A/*B/*.c)
+        tant que path contient plus de deux elements (le premier est forcement un repertoire) 
+            si l'element contient * 
             cherche toutes les options du répertoire courant qui correspondent au motif
-            concatène toutes les options trouvées avec le répertoire courant
-            change le répertoire courant au prochain répertoire de path
+            sinon la seule option est l'element lui meme (repertoire ne contient pas * ex: A/*.c)
+            Pour cahque option trouvé, 
+                la concatener avec le répertoire courant current_path
+                supprimer l'element de path
+                faire appel recursive de expand _star pour chercher le path restant dans le nouveau reperoire courant (repetoire courant c'est current path est concatené avec l'option trouvé)
+            
 ```
 
 Le joker `**/` permet quant à lui de prendre tous les chemins physiques ayant comme suffixe ce qu'il se trouve après le joker. L'implémentation de cette méthode, `expand_double_star`, est ainsi similaire à celle de `expand_star`.
@@ -112,13 +117,15 @@ Le joker `**/` permet quant à lui de prendre tous les chemins physiques ayant c
 Une explication globale de la fonction permettant l'expansion du joker `**/` est détaillée ci-dessous :
 ```
 Fonction expand_double_star (path, length, current_rep) :
-    si path contient seulement le joker alors
+    on supprime le joker **/ du path 
+    si path contient seulement le joker donc path devient vide apres suppression alors
         renvoie toute l'arborescence du répertoire courant
     sinon
-        tant que tous les fichiers de path ne sont pas encore parcouru
-            récupère toutes les options du répertoire courant
-            concatène ces options avec le répertoire courant
-            change le répertoire courant au prochain répertoire de path
+        Parcourir toute  l'arborescence du repertoire_courant et dans chaque repertoire de l'arborescence 
+            Appelle expand_sta(path,length,current_rep) pour recuperer toute les options de path à partir de ce ce repertoire
+            concatène les options trouvé dans un tableau recursivent
+        renvoie toute les options trouvé dans tout les repertoire de l'arborecence initial 
+        
 ```
 
 ### Gestion des redirections
@@ -130,8 +137,10 @@ Une explication globale de la fonction permettant les redirections est détaill�
 Fonction redirection (arguments) :
     tant que arguments contient des redirections faire
         récupère le symbole de redirection
-        récupère le fichier d'origine/destination
-        effectue la redirection
+        récupère le fichier d'origine/destination 
+        tester si le champs de redirection est valide : il exite un champs apres le symbole de redirection et si ce n'est pas un pipe 
+        si champs valide alors effectue la redirection
+        sinon renvoyer le code d'erreur 2 (syntax error)
 ```
 
 Après la commande exécutée, les redirections sont remises à défaut.
