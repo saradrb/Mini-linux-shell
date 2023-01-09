@@ -42,6 +42,15 @@ int extern_command(char *cmd, char **args) {
   }
 }
 
+/**
+ * @brief execute command with pipe if there is any
+ *
+ * @param cmd command
+ * @param args array of command and arguments
+ * @param fd_write writing pipe
+ * @param fd_read reading pipe
+ * @return value of execution command
+ */
 int extern_command_bis(char *cmd, char **args, int fd_write[], int fd_read[]) {
   int status = 0;
   int return_value = 0;
@@ -59,6 +68,7 @@ int extern_command_bis(char *cmd, char **args, int fd_write[], int fd_read[]) {
       write(STDOUT_FILENO, "Error fork\n", 12);
       return 1;
     case 0:
+      // apply pipes if there is any
       if (fd_write[1] != -1) {
         dup2(fd_write[1], STDOUT_FILENO);
       }

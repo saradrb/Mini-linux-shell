@@ -34,7 +34,6 @@ static char **copy_part_of_cmd(char **cmd, int start, int finish) {
 
     strncpy(string, cmd[i], strlen(cmd[i]) + 1);
     res[i - start] = string;
-    // res[i - start] = cmd[i];
   }
 
   res[finish + 1 - start] = NULL;

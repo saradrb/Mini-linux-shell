@@ -191,6 +191,7 @@ handle_rd:
   return (return_value);
 }
 
+// execution and redirection of pipe command
 int cmd_with_redirection_pipe(char* cmd, char** args, int length,
                               int pos_redirection, int fd_write[],
                               int fd_read[]) {

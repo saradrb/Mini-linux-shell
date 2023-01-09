@@ -10,7 +10,7 @@
 #include "external_commands.h"
 #include "redirection.h"
 
-int exec_cmd(int fd_read[], int fd_write[], char **cmd);
+// int exec_cmd(int fd_read[], int fd_write[], char **cmd);
 int exec_first_last_command(int first_last, int fd_write[], int fd_read[],
                             char **cmd, int mid);
 int length_of_pipelines(char ***tab);
