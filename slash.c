@@ -284,16 +284,20 @@ static void read_cmd() {
             char **options = malloc(sizeof(char *) * PATH_MAX);
 
             expand_star(mypath, nb_parts, expanded_path, options, &nb_options);
-
-            // concat final array to the argument array
-            args_extanded =
-                concat_tab(args_extanded, &size, options, nb_options);
-
+            switch (nb_options){
+                case 0:
+                  args_extanded=concat_elem(args_extanded, &size, list_arg[i]);
+                default:
+                // concat final array to the argument array
+                  args_extanded = concat_tab(args_extanded, &size, options, nb_options);
+            }
+            
             // free the allocated memory
             free(options);
             free(mypath);
             free(expanded_path);
           } else {
+            //concat elem to the arg array 
             args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
           }
         }
