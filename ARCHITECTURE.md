@@ -4,13 +4,14 @@
 
 Un diagramme montrant les différentes relations entre les classes a été crée pour mieux visualiser ce projet.
 
-IMAGE
+![image](class-diagram.jpeg)
 
 Lors de son lancement, `slash` ignore `SIGINT` et `SIGTERM`, affiche son prompt et attend une ligne de commande de l'utilisateur. Selon le contenu de cette ligne de commande, `slash` va effectuer plusieurs actions :
-- si la ligne contient un joker (`*` ou `**`), alors il va la traiter à l'aide des méthodes contenu dans `wildcard.c`
-- si la ligne contient une redirection, alors 
-- traiter les caractères spéciaux (tels que `*`, `**`, `|` et toutes les redirections)
-- et enfin exécuter la commande
+- si la ligne contient un joker (`*` ou `**`), alors `slash` va la traiter et la remplacer par des noms de fichiers à l'aide des méthodes contenu dans `wildcard.c`
+- si la ligne contient un pipeline alors `slash` va la traiter à l'aide des méthodes contenus dans `pipeline.c`, qui permettent d'exécuter toutes les commandes avec des redirections en plus
+- si la ligne contient seulement une commande redirigé, alors `slash` va l'exécuter à l'aide des méthodes de `redirection.c`, qui permettent de rediriger l'entrée standard, la sortie standard ou la sortie erreur
+- si la ligne contient seulement une commande interne, alors `slash` va l'exécuter à l'aide de `internal_commands.c`
+- enfin, si la ligne conteint uniquement une commande externe, alors `slash` va l'exécuter à l'aide de `external_commands.c`
 
 ## Détails des algorithmes implémentés
 
