@@ -18,4 +18,6 @@
  */
 int extern_command(char *cmd, char **args);
 
+int extern_command_bis(char *cmd, char **args, int fd_write[], int fd_read[]);
+
 #endif

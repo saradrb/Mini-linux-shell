@@ -24,6 +24,8 @@ int close_bis(int x) {
 void test_mini_tab(char **tab) {
   for (int i = 0; tab[i] != NULL; i++) {
     char *tmp = tab[i];
+    write(1, tmp, strlen(tmp));
+    write(1, "    ", 5);
     char aaa = 'a';
     // write(1, tmp, strlen(tmp));
   }
@@ -45,7 +47,7 @@ char *initialiser_string(int longueur) {
   return chaine;
 }
 
-void free_triple_tab(char ***tableau, int sure) {
+void free_triple_tab_test(char ***tableau, int sure) {
   if (sure != -2) return;
 
   // Pour chaque char ** dans le tableau
@@ -91,6 +93,7 @@ int exec_adapted_cmd(char **cmd, int length) {
  * @return int
  */
 int exec_cmd(int fd_read[], int fd_write[], char **cmd) {
+  int fake[2] = {-1, -1};
   // length de cmd, cmd[0] = commande
   int length = 0;
   for (int i = 0; cmd[i] != NULL; i++) {
@@ -102,25 +105,28 @@ int exec_cmd(int fd_read[], int fd_write[], char **cmd) {
   // commande)
   if (fd_read[0] != -1) {
     if (fd_write[1] != -1) {
-      if (dup2(fd_write[1], STDOUT_FILENO) == -1) return -2;
-      if (dup2(fd_read[0], STDIN_FILENO) == -1) return -2;
-      previous_return_value = exec_adapted_cmd(cmd, length);
-      if (dup2(STDIN_FILENO, fd_read[0]) == -1) return -2;
-      if (dup2(STDOUT_FILENO, fd_write[1]) == -1) return -2;
-      if (close(fd_write[1]) == -2) {
-        close(fd_read[0]);
-        return -2;
-      }
+      // // if (dup2(fd_write[1], STDOUT_FILENO) == -1) return -2;
+      // // if (dup2(fd_read[0], STDIN_FILENO) == -1) return -2;
+      // // // previous_return_value = exec_adapted_cmd(cmd, length);
+      // // if (dup2(STDIN_FILENO, fd_read[0]) == -1) return -2;
+      // // if (dup2(STDOUT_FILENO, fd_write[1]) == -1) return -2;
+      // // if (close(fd_write[1]) == -2) {
+      // //   close(fd_read[0]);
+      // //   return -2;
+      // // }
+      previous_return_value =
+          extern_command_bis(cmd[0], cmd, fd_write, fd_read);
     } else {
-      // char *buf = initialiser_string(PIPE_BUF);
-      // read(fd_read[0], buf, PIPE_BUF);
-      // cmd = realloc(cmd, 4 * sizeof(char *));
-      if (dup2(fd_read[0], STDIN_FILENO) == -1) return -2;
-      previous_return_value = extern_command(cmd[0], cmd);
-      // previous_return_value = exec_adapted_cmd(cmd, length);
-      if (dup2(STDIN_FILENO, fd_read[0]) == -1) return -2;
+      previous_return_value = extern_command_bis(cmd[0], cmd, fake, fd_read);
+      // // // // char *buf = initialiser_string(PIPE_BUF);
+      // // // // read(fd_read[0], buf, PIPE_BUF);
+      // // // // cmd = realloc(cmd, 4 * sizeof(char *));
+      // // // if (dup2(fd_read[0], STDIN_FILENO) == -1) return -2;
+      // // // previous_return_value = extern_command(cmd[0], cmd);
+      // // // // previous_return_value = exec_adapted_cmd(cmd, length);
+      // // // if (dup2(STDIN_FILENO, fd_read[0]) == -1) return -2;
     }
-    if (close_bis(fd_read[0]) == -2) return -2;
+    // // // if (close_bis(fd_read[0]) == -2) return -2;
     return previous_return_value;
 
     // char *buf = initialiser_string(PIPE_BUF);
@@ -140,18 +146,21 @@ int exec_cmd(int fd_read[], int fd_write[], char **cmd) {
     // test_mini_tab(cmd);
   }
   if (fd_write[1] != -1) {
-    if (dup2(fd_write[1], STDOUT_FILENO) == -1) {
-      return -2;
-    }
-    previous_return_value = exec_adapted_cmd(cmd, length);
-    if (dup2(STDOUT_FILENO, fd_write[1]) == -1) {
-      return -2;
-    }
-    if (close(fd_write[1]) == -2) return -2;
-  } else {
-    test_mini_tab(cmd);
-    previous_return_value = exec_adapted_cmd(cmd, length);
-  }
+    previous_return_value = extern_command_bis(cmd[0], cmd, fd_write, fake);
+    // // // // if (dup2(fd_write[1], STDOUT_FILENO) == -1) {
+    // // // //   return -2;
+    // // // // }
+    // // // // previous_return_value = exec_adapted_cmd(cmd, length);
+    // // // // if (dup2(STDOUT_FILENO, fd_write[1]) == -1) {
+    // // // //   return -2;
+    // // // // }
+    // // // // if (close(fd_write[1]) == -2) return -2;
+  } 
+  // // // else {
+  // // //   // // // test_mini_tab(cmd);
+  // // //   // // // previous_return_value = exec_adapted_cmd(cmd, length);
+  // // //   previous_return_value = extern_command_bis(cmd[0], cmd, fake, fake);
+  // // // }
   return previous_return_value;
 }
 

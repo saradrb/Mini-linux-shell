@@ -8,6 +8,7 @@
 #include "internal_commands.h"
 #include "library/string.c"
 #include "my_limits.h"
+#include "pipeline.h"
 #include "redirection.h"
 #include "signal.h"
 #include "wildcard.h"
@@ -15,6 +16,94 @@
 extern char previous_rep[PATH_MAX];
 extern char current_rep[PATH_MAX];
 extern int previous_return_value;
+
+char **copy_part_of_cmd(char **cmd, int start, int finish) {
+  char **res = malloc((finish + 2 - start) * sizeof(char *));
+  if (res == NULL) {
+    perror("malloc");
+  }
+
+  for (int i = start; i <= finish; i++) {
+    char *test = cmd[i];
+    res[i - start] = cmd[i];
+  }
+  res[finish + 1 - start] = NULL;
+  if (res[finish + 1 - start] == NULL) {
+    int a = 5;
+  }
+  return res;
+}
+
+void free_triple_tab_slash(char ***tab) {
+  int i = 0;
+  while (tab[i] != NULL) {
+    int j = 0;
+    char **tmp = tab[i];
+    while (tmp[j] != NULL) {
+      char *f = tmp[j];
+      char e = ' ';
+    }
+  }
+  free(tab);
+  // // // Pour chaque char ** dans le tableau
+  // // for (int i = 0; tableau[i] != NULL; i++) {
+  // //   // Libérer l'espace mémoire alloué pour le char *
+  // //   free((*tableau)[i]);
+  // // }
+  // // // Libérer l'espace mémoire alloué pour le char **
+  // // free(*tableau);
+  // // // Mettre le pointeur à NULL pour éviter tout accès futur à cet espace
+  // mémoire
+  // // *tableau = NULL;
+}
+
+char ***split_cmd_to_pipeline(char **cmd, int nbr_of_pipes) {
+  char ***res = malloc((nbr_of_pipes + 2) * sizeof(char **));
+  int i = 0;
+  int prev = 0;
+  int j = 0;
+  while (cmd[j] != NULL) {
+    char *tmp = cmd[j];
+    if (strcmp(cmd[j], "|") == 0) {
+      // res[i] = realloc(cmd[prev], (j + 1 - prev) * sizeof(char *));
+      res[i] = copy_part_of_cmd(cmd, prev, j - 1);
+      // test_mni_tab(res[i]);
+      i = i + 1;
+      prev = j + 1;
+      j = j + 1;
+    } else {
+      j = j + 1;
+    }
+  }
+  res[i] = copy_part_of_cmd(cmd, prev, j - 1);
+  // test_mini_tab(res[i]);
+  res[i + 1] = NULL;
+  return res;
+}
+
+void test_tab(char ***tab) {
+  int i = 0;
+  while (tab[i] != NULL) {
+    int j = 0;
+    char **tmp = tab[i];
+    while (tmp[j] != NULL) {
+      char *f = tmp[j];
+      char e = ' ';
+    }
+  }
+}
+
+int nbr_pipe(char **tab) {
+  int i = 0;
+  int len = 0;
+  while (tab[i] != NULL) {
+    if (strcmp(tab[i], "|") == 0) {
+      len++;
+    }
+    i++;
+  }
+  return len;
+}
 
 /**
  * @brief Print prompt with color, containing the return value of the last
@@ -214,15 +303,21 @@ static void read_cmd() {
 
       // handle redirection if any
       int pos_redirection = contains_valid_redirection(args_extanded, size);
-      // // // int nbr_of_pipes = nbr_pipe(args_extanded);
-      // // // if (nbr_of_pipes > 0) {
-      // // //   char ***pipeline = split_cmd_to_pipeline(args_extanded, nbr_of_pipes);
-      // // //   if (pipeline == NULL) {
-      // // //     perror("error");
-      // // //   }
-      // // //   int n = exec_pipeline(pipeline);
-      // // //   previous_return_value = n;
-      // // // } else 
+      // test_mini_tab(args_extanded);
+      // int nbr_of_pipes = nbr_pipe(args_extanded);
+      // write(1, "\n\n\n", 4);
+      // test_mini_tab(args_extanded);
+      // printf("nbr_pipes : %d\n", nbr_of_pipes);
+      // if (nbr_of_pipes > 0) {
+      //   char ***pipeline = split_cmd_to_pipeline(args_extanded,
+      //   nbr_of_pipes); if (pipeline == NULL) {
+      //     perror("error");
+      //   }
+      //   int n = exec_pipeline(pipeline);
+      //   previous_return_value = n;
+      //   // free_triple_tab_test(pipeline, -2);
+      //   free(pipeline);
+      // } else
       if (pos_redirection > 0) {
         previous_return_value =
             cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
@@ -242,6 +337,7 @@ static void read_cmd() {
           }
         }
       }
+      // free_triple_tab_slash(pipeline);
       free_struct(args_extanded, size);
       free(list_arg);
     }
