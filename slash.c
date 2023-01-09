@@ -85,12 +85,20 @@ int test_tab(char ***tab) {
     if (tmp[j] == NULL) {
       return 55;
     }
-
-    // while (tmp[j] != NULL) {
-    //   char *f = tmp[j];
-    //   char e = ' ';
-    //   j++;
-    // }
+    if (j == 0 && (strcmp(tmp[j], "<") == 0 || strcmp(tmp[j], ">") == 0 ||
+                   strcmp(tmp[j], ">|") == 0 || strcmp(tmp[j], ">>") == 0 ||
+                   strcmp(tmp[j], "2>") == 0 || strcmp(tmp[j], "2>>") == 0 ||
+                   strcmp(tmp[j], "2>|") == 0)) {
+      return 55;
+    }
+    while (tmp[j] != NULL) j++;
+    if (j != 0 &&
+        (strcmp(tmp[j - 1], "<") == 0 || strcmp(tmp[j - 1], ">") == 0 ||
+         strcmp(tmp[j - 1], ">|") == 0 || strcmp(tmp[j - 1], ">>") == 0 ||
+         strcmp(tmp[j - 1], "2>") == 0 || strcmp(tmp[j - 1], "2>>") == 0 ||
+         strcmp(tmp[j - 1], "2>|") == 0)) {
+      return 55;
+    }
     i++;
   }
   return 0;
@@ -198,135 +206,120 @@ static void read_cmd() {
       my_exit(NULL, 0);
     }
 
-    // if the line isnt empty
-    if (trimmed_line && *trimmed_line) {
-      add_history(trimmed_line);
+    // if line is empty then don't do anything
+    if (!(trimmed_line && *trimmed_line)) continue;
 
-      // split the line
-      char **list_arg = split_line(trimmed_line, &cmd, &length, " ");
+    add_history(trimmed_line);
 
-      // test if there is an argument that contains a wildcard (* or **)
-      int size = 0;
-      char **args_extanded = NULL;
-      int nb_cmds = 0;
-      if (strstr(cmd, "*")) {
-        char *expanded_path = malloc(sizeof(char) * PATH_MAX);
-        memset(expanded_path, 0, sizeof(char) * PATH_MAX);
-        char **mypath = parse_path(cmd, &nb_parts, "/");
-        char **new_cmd = malloc(sizeof(char *) * 10);
-        expand_star(mypath, nb_parts, expanded_path, new_cmd, &nb_cmds);
-        free(mypath);
-        free(expanded_path);
+    // split the line
+    char **list_arg = split_line(trimmed_line, &cmd, &length, " ");
 
-        switch (nb_cmds) {
-          case 0:
-            args_extanded = concat_elem(args_extanded, &size, cmd);
-          default:
-            args_extanded = concat_tab(args_extanded, &size, new_cmd, nb_cmds);
-            cmd = args_extanded[0];
+    // test if there is an argument that contains a wildcard (* or **)
+    int size = 0;
+    char **args_extanded = NULL;
+    int nb_cmds = 0;
+    if (strstr(cmd, "*")) {
+      char *expanded_path = malloc(sizeof(char) * PATH_MAX);
+      memset(expanded_path, 0, sizeof(char) * PATH_MAX);
+      char **mypath = parse_path(cmd, &nb_parts, "/");
+      char **new_cmd = malloc(sizeof(char *) * 10);
+
+      expand_star(mypath, nb_parts, expanded_path, new_cmd, &nb_cmds);
+      free(mypath);
+      free(expanded_path);
+
+      switch (nb_cmds) {
+        case 0:
+          args_extanded = concat_elem(args_extanded, &size, cmd);
+        default:
+          args_extanded = concat_tab(args_extanded, &size, new_cmd, nb_cmds);
+          cmd = args_extanded[0];
+      }
+      free(new_cmd);
+    } else {
+      args_extanded = concat_elem(args_extanded, &size, cmd);
+    }
+
+    for (int i = 0; i < length; i++) {
+      if (prefix("**", list_arg[i], NULL)) {
+        // if it contains a ** return all the possible options in the current
+        // repo tree
+        char **mypath = parse_path(list_arg[i], &nb_parts, "/");
+        args_extanded = expand_double_star(mypath + 1, nb_parts - 1, "",
+                                           args_extanded, &size);
+
+        // if we dont find any option concatenate arg as it is
+        if (size == 0) {
+          args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
         }
-
-        free(new_cmd);
+        free(mypath);
 
       } else {
-        args_extanded = concat_elem(args_extanded, &size, cmd);
-      }
+        if (strstr(list_arg[i], "*") && !strstr(list_arg[i], "**")) {
+          // then expand the star and return an array with all the path
+          // options
+          char *expanded_path = malloc(sizeof(char) * PATH_MAX);
+          memset(expanded_path, 0, sizeof(char) * PATH_MAX);
 
-      for (int i = 0; i < length; i++) {
-        if (prefix("**", list_arg[i], NULL)) {
-          // if it contains a ** return all the possible options in the current
-          // repo tree
           char **mypath = parse_path(list_arg[i], &nb_parts, "/");
-          args_extanded = expand_double_star(mypath + 1, nb_parts - 1, "",
-                                             args_extanded, &size);
+          int nb_options = 0;
+          char **options = malloc(sizeof(char *) * PATH_MAX);
 
-          if (size ==
-              0) {  // if we dont find any option concatenate arg as it is
-            args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
+          expand_star(mypath, nb_parts, expanded_path, options, &nb_options);
+          switch (nb_options) {
+            case 0:
+              args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
+            default:
+              // concat final array to the argument array
+              args_extanded =
+                  concat_tab(args_extanded, &size, options, nb_options);
           }
+          // free the allocated memory
+          free(options);
           free(mypath);
-
+          free(expanded_path);
         } else {
-          if (strstr(list_arg[i], "*") && !strstr(list_arg[i], "**")) {
-            // then expand the star and return an array with all the path
-            // options
-            char *expanded_path = malloc(sizeof(char) * PATH_MAX);
-            memset(expanded_path, 0, sizeof(char) * PATH_MAX);
-
-            char **mypath = parse_path(list_arg[i], &nb_parts, "/");
-            int nb_options = 0;
-            char **options = malloc(sizeof(char *) * PATH_MAX);
-
-            expand_star(mypath, nb_parts, expanded_path, options, &nb_options);
-            switch (nb_options) {
-              case 0:
-                args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
-              default:
-                // concat final array to the argument array
-                args_extanded =
-                    concat_tab(args_extanded, &size, options, nb_options);
-            }
-
-            // free the allocated memory
-            free(options);
-            free(mypath);
-            free(expanded_path);
-          } else {
-            // concat elem to the arg array
-            args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
-          }
-        }
-      }  // expanding the path
-
-      // exec command
-
-      // handle redirection if any
-      int pos_redirection = contains_valid_redirection(args_extanded, size);
-      // test_mini_tab(args_extanded);
-      int nbr_of_pipes = nbr_pipe(args_extanded);
-      // write(1, "\n\n\n", 4);
-      // test_mini_tab(args_extanded);
-      // printf("nbr_pipes : %d\n", nbr_of_pipes);
-      if (nbr_of_pipes > 0 ) {
-        char ***pipeline = split_cmd_to_pipeline(args_extanded, nbr_of_pipes);
-        if (pipeline == NULL) {
-          perror("error");
-        }
-        if (test_tab(pipeline) == 0) {
-          int n = exec_pipeline(pipeline);
-          previous_return_value = n;
-          // free_triple_tab_test(pipeline, -2);
-          free(pipeline);
-        } else {
-          free(pipeline);
-          previous_return_value = 2;
-        }
-
-      } else{ 
-        if (pos_redirection > 0 || pos_redirection==0) {
-            previous_return_value = cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
-        } else {
-          if (strcmp(cmd, "exit") == 0) {
-            previous_return_value = my_exit(args_extanded + 1, length);
-          } else {
-            if (strcmp(cmd, "cd") == 0) {
-              previous_return_value = my_cd(args_extanded + 1, length);
-            } else {
-              if (strcmp(cmd, "pwd") == 0) {
-                previous_return_value = my_pwd(args_extanded + 1, length);
-              } else {
-                // execute external command with the new extanded array of args
-                previous_return_value = extern_command(cmd, args_extanded);
-              }
-            }
-          }
+          // concat elem to the arg array
+          args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
         }
       }
-      // free_triple_tab_slash(pipeline);
-      // printf("final size is %d\n",size);
-      free_struct(args_extanded, size);
-      free(list_arg);
+    }  // expanding the path
+
+    // exec command
+
+    // handle redirection if any
+    int pos_redirection = contains_valid_redirection(args_extanded, size);
+    int nbr_of_pipes = nbr_pipe(args_extanded);
+    if (nbr_of_pipes > 0) {
+      char ***pipeline = split_cmd_to_pipeline(args_extanded, nbr_of_pipes);
+      if (pipeline == NULL) {
+        perror("error");
+      }
+      if (test_tab(pipeline) == 0) {
+        int n = exec_pipeline(pipeline);
+        previous_return_value = n;
+        free(pipeline);
+      } else {
+        free(pipeline);
+        previous_return_value = 2;
+      }
+
+    } else if (pos_redirection > 0 || pos_redirection == 0) {
+      previous_return_value =
+          cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
+    } else if (strcmp(cmd, "exit") == 0) {
+      previous_return_value = my_exit(args_extanded + 1, length);
+    } else if (strcmp(cmd, "cd") == 0) {
+      previous_return_value = my_cd(args_extanded + 1, length);
+    } else if (strcmp(cmd, "pwd") == 0) {
+      previous_return_value = my_pwd(args_extanded + 1, length);
+    } else {
+      // execute external command with the new extanded array of args
+      previous_return_value = extern_command(cmd, args_extanded);
     }
+
+    free_struct(args_extanded, size);
+    free(list_arg);
     free(line);
     free(trimmed_line);
   }
