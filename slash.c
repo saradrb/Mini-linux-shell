@@ -287,7 +287,7 @@ static void read_cmd() {
       // write(1, "\n\n\n", 4);
       // test_mini_tab(args_extanded);
       // printf("nbr_pipes : %d\n", nbr_of_pipes);
-      if (nbr_of_pipes > 0) {
+      if (nbr_of_pipes > 0 ) {
         char ***pipeline = split_cmd_to_pipeline(args_extanded, nbr_of_pipes);
         if (pipeline == NULL) {
           perror("error");
@@ -302,13 +302,9 @@ static void read_cmd() {
           previous_return_value = 2;
         }
 
-      } else if (pos_redirection > 0) {
-        previous_return_value =
-            cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
-      } else {
-        if (pos_redirection == -2) {
-          previous_return_value = 2;
-
+      } else{ 
+        if (pos_redirection > 0 || pos_redirection==0) {
+            previous_return_value = cmd_with_redirection(cmd, args_extanded, size, pos_redirection);
         } else {
           if (strcmp(cmd, "exit") == 0) {
             previous_return_value = my_exit(args_extanded + 1, length);

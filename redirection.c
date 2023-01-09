@@ -11,16 +11,7 @@
  * returns -2 if there is no redirection
  */
 int contains_valid_redirection(char** args_extanded, int size) {
-  if (size - 2 > 0) {
-    char* string = args_extanded[size - 2];
-    if (strcmp(string, ">") == 0 || strcmp(string, "<") == 0 ||
-        strcmp(string, ">>") == 0 || strcmp(string, ">|") == 0 ||
-        strcmp(string, "2>") == 0 || strcmp(string, "2>>") == 0 ||
-        strcmp(string, "2>|") == 0 || strcmp(string, "2>") == 0) {
-      return (size - 2);
-    }  // redirection symbol position
-  }
-
+  
     for(int i = size-1; i>0; i--){
       char* string = args_extanded[i];
       if (strcmp(string, ">") == 0 || strcmp(string, "<") == 0 ||
@@ -28,9 +19,9 @@ int contains_valid_redirection(char** args_extanded, int size) {
           strcmp(string, "2>") == 0 || strcmp(string, "2>>") == 0 ||
           strcmp(string, "2>|") == 0 || strcmp(string, "2>") == 0) {
           //here args_extanded[i+1] is the redirection field and it can't be a pipe 
-          if (i<size-1 && !prefix("|",args_extanded[i+1],NULL)) return i;  // redirection symbol position
+          if (i<size-1 && !prefix("|",args_extanded[i+1],NULL)) {return i; } // redirection symbol position
           else {
-            return -2; //invalid redirection
+             return 0; //invalid redirection
           }
       } 
     }
@@ -50,8 +41,7 @@ int contains_valid_redirection(char** args_extanded, int size) {
 int handle_redirection(char* redirection, char* filename) {
   int fd = 0;
   int result;
-  if (strcmp(redirection, "<") ==
-      0) {  // redirecting stdin of the command to the file filename
+  if (strcmp(redirection, "<") == 0) {  // redirecting stdin of the command to the file filename
 
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
@@ -168,7 +158,7 @@ int cmd_with_redirection(char* cmd, char** args, int length,
   fd_standard[2] = dup(STDERR_FILENO);
   int return_value = 0;
   char * sv=args[pos_redirection];
-  
+  if (pos_redirection== 0){return 2;}
 handle_rd:
   length = length - 2;
   return_value = handle_redirection(args[length], args[length + 1]);
