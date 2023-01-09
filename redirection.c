@@ -155,15 +155,17 @@ int cmd_with_redirection(char *cmd, char **args, int length,
   fd_standard[1] = dup(STDOUT_FILENO);
   fd_standard[2] = dup(STDERR_FILENO);
   int return_value = 0;
+  char * sv=args[pos_redirection];
+  
 handle_rd:
   length = length - 2;
   return_value = handle_redirection(args[length], args[length + 1]);
-  args[length] = NULL;
-
   if (return_value == 0) {
     if (contains_valid_redirection(args, length) > 0) {
       goto handle_rd;
     }
+    sv = args[length]; // save the adress of the argument
+    args[length] = NULL; // put the pointer to argumnt = null so that the commands will stop at null 
     if (strcmp(cmd, "exit") == 0) {
       return_value = my_exit(args + 1, length - 1);
     } else {
@@ -179,6 +181,7 @@ handle_rd:
       }
     }
   }
+  args[length]=sv;
   go_back_to_standard(fd_standard);
   return (return_value);
 }
