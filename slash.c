@@ -251,10 +251,14 @@ static void read_cmd() {
         free(mypath);
         free(expanded_path);
 
-        if (nb_cmds) {
-          args_extanded = concat_tab(args_extanded, &size, new_cmd, nb_cmds);
-          cmd = args_extanded[0];
+        switch(nb_cmds) {
+          case 0:
+            args_extanded = concat_elem(args_extanded, &size, cmd);
+          default:
+            args_extanded = concat_tab(args_extanded, &size, new_cmd, nb_cmds);
+            cmd = args_extanded[0];
         }
+      
         free(new_cmd);
 
       } else {
@@ -298,7 +302,17 @@ static void read_cmd() {
             free(expanded_path);
           } else {
             //concat elem to the arg array 
+            /* for (int i = 0; i < size; i++)
+            {
+              printf("***%s\n",args_extanded[i]);
+            } */
+            
             args_extanded = concat_elem(args_extanded, &size, list_arg[i]);
+            /*  for (int i = 0; i < size; i++)
+            {
+              printf("%s\n",args_extanded[i]);
+            } */
+            
           }
         }
       }  // expanding the path
@@ -342,6 +356,7 @@ static void read_cmd() {
         }
       }
       // free_triple_tab_slash(pipeline);
+      //printf("final size is %d\n",size);
       free_struct(args_extanded, size);
       free(list_arg);
     }
